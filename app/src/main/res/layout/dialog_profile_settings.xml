@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardBackgroundColor="#FF18181B"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="0dp">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+            <!-- Title & Close -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="My Profile"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/btnCloseProfileDialog"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_alignParentEnd="true"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    app:tint="#FFFFFF" />
+            </RelativeLayout>
+
+            <!-- User Avatar Details Card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="#1AFFFFFF"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal"
+                    android:padding="20dp">
+
+                    <!-- Avatar representation -->
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        app:cardCornerRadius="32dp"
+                        app:cardBackgroundColor="#00E5FF"
+                        android:layout_marginBottom="12dp">
+                        <TextView
+                            android:id="@+id/profileAvatarInitials"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:text="M"
+                            android:textColor="#18181B"
+                            android:textSize="24sp"
+                            android:textStyle="bold" />
+                    </androidx.cardview.widget.CardView>
+
+                    <TextView
+                        android:id="@+id/profileTxtEmail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="magician@example.com"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <!-- Premium Badge -->
+                    <LinearLayout
+                        android:id="@+id/profilePremiumBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="@drawable/bg_magic_gradient"
+                        android:layout_marginTop="8dp"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="4dp"
+                        android:gravity="center">
+                        <TextView
+                            android:id="@+id/profileTxtPremiumBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="LIFETIME PRO"
+                            android:textColor="#FFFFFF"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Subscription Details Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardSubscriptionDetails"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="#0DFFFFFF"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#22FFFFFF">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Subscription Status"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:alpha="0.9"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Plan Status Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Plan Status:"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/txtProfilePlanStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Checking status..."
+                            android:textColor="#88FFFFFF"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Purchase Type Row -->
+                    <LinearLayout
+                        android:id="@+id/rowProfilePurchaseType"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="License Type:"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/txtProfilePurchaseType"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="None"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <!-- Purchase Date Row -->
+                    <LinearLayout
+                        android:id="@+id/rowProfilePurchaseDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Upgrade Date:"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/txtProfilePurchaseDate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="N/A"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <!-- Order ID / Transaction ID Row -->
+                    <LinearLayout
+                        android:id="@+id/rowProfileTransactionId"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Order ID:"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/txtProfileTransactionId"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="N/A"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <!-- Expiry Row -->
+                    <LinearLayout
+                        android:id="@+id/rowProfileExpiry"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="4dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Valid Until:"
+                                android:textColor="#88FFFFFF"
+                                android:textSize="12sp" />
+                            <TextView
+                                android:id="@+id/txtProfileExpiryDate"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="N/A"
+                                android:textColor="#FFFFFF"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/txtProfileExpiryCountdown"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:layout_marginTop="2dp"
+                            android:text=""
+                            android:textColor="#00FF66"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Upgrade to Pro Button inside card (For Free tier users) -->
+                    <Button
+                        android:id="@+id/btnProfileUpgradeCard"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="8dp"
+                        android:text="UPGRADE TO PREMIUM PRO"
+                        android:textColor="#18181B"
+                        android:backgroundTint="#FFD700"
+                        app:cornerRadius="12dp"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+
+                    <!-- Simulation / Testing Workspace Section -->
+                    <TextView
+                        android:id="@+id/txtProfileSandboxHeader"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sandbox Testing Tools"
+                        android:textColor="#88FFFFFF"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="8dp" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutProfileSandboxButtons"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <Button
+                            android:id="@+id/btnSimulate7Day"
+                            style="?android:attr/buttonStyleSmall"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_weight="1"
+                            android:text="+ 7 Days"
+                            android:textColor="#FFFFFF"
+                            android:backgroundTint="#2D3139"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="8dp" />
+                        <Button
+                            android:id="@+id/btnSimulateLifetime"
+                            style="?android:attr/buttonStyleSmall"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="6dp"
+                            android:text="+ Lifetime"
+                            android:textColor="#18181B"
+                            android:backgroundTint="#FFD700"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="8dp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Settings / Actions Options -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:text="SYSTEM SETTINGS"
+                android:textColor="#88FFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Option 1: Draw Over Other Apps Permission -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/profileCardOverlayPermission"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="#0DFFFFFF"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="14dp">
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_menu_manage"
+                        app:tint="#00E5FF"/>
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="System Permissions"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ensure MoiLock lockscreen is permitted"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_help"
+                        app:tint="#44FFFFFF" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Option 2: Backup / Cloud Configurations -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/profileCardCloudBackup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="#0DFFFFFF"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="14dp">
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_magic"
+                        app:tint="#00FF66"/>
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Cloud Configurations Sync"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Backup custom setup configurations"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Action buttons: Logout -->
+            <Button
+                android:id="@+id/profileBtnLogout"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="LOGOUT"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#CF6679"
+                app:cornerRadius="16dp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+    </ScrollView>
+</androidx.cardview.widget.CardView>

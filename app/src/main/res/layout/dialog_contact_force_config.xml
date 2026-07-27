@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardBackgroundColor="#FF18181B"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="0dp">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Title Header -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:id="@+id/dialogTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Contact Force Config"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/btnCloseConfig"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_alignParentEnd="true"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    app:tint="#FFFFFF" />
+            </RelativeLayout>
+
+            <!-- Toggle Option -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="20dp"
+                android:padding="4dp">
+                
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Enable Contact Force"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Intercept dialer contact selection for badge prediction"
+                        android:textColor="#88FFFFFF"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swEnableContactForce"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:thumbTint="@color/white"
+                    app:trackTint="@color/dialer_green" />
+            </LinearLayout>
+
+            <!-- Force Details Inputs -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="FORCED CONTACT OVERRIDE"
+                android:textColor="#00FF66"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Input Name -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:hintTextColor="#00FF66"
+                app:boxStrokeColor="#00FF66"
+                android:textColorHint="#55FFFFFF"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etForcedContactName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Forced Contact Name"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:inputType="textPersonName" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Input Phone -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                app:hintTextColor="#00FF66"
+                app:boxStrokeColor="#00FF66"
+                android:textColorHint="#55FFFFFF"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etForcedContactPhone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Forced Contact Phone"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:inputType="phone" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Performance steps Guide expander -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔮 THE CORE ILLUSION"
+                android:textColor="#00FF66"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="#1AFFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="1. The Photo (gallery/prediction_friends.jpg)"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Displays two friends at a seminar wearing ID badges. At first glance, their badges look completely blank/normal."
+                        android:textColor="#88FFFFFF"
+                        android:textSize="11sp"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="10dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="2. Spectator's Input &amp; Split Reveal"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="The spectator selects a contact on the calculator dialer. The app instantly splits their name &amp; phone number onto the two friends' badges, blended to look like printed ID card details!"
+                        android:textColor="#88FFFFFF"
+                        android:textSize="11sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📖 PERFORMANCE STEPS"
+                android:textColor="#00FF66"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="#1AFFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Step 1: Setup"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ensure 'Contact Force Predictor' is toggled ON. Set up custom details if needed."
+                        android:textColor="#88FFFFFF"
+                        android:textSize="11sp"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="10dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Step 2: Peek/Input Phase"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Let the spectator choose a contact (or auto-force it via the dialer). The app intercepts the selection instantly."
+                        android:textColor="#88FFFFFF"
+                        android:textSize="11sp"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="10dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Step 3: The Build-up"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Open the Gallery and swipe to the friends photo. Explain: 'These two people attended a global conference. Everything in this photo is normal and untouched.'"
+                        android:textColor="#88FFFFFF"
+                        android:textSize="11sp"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="10dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Step 4: The Climax"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Rotate the phone to landscape mode. Point at the badges: 'Read what is printed right on their conference ID badges.' They read their own name and phone number!"
+                        android:textColor="#88FFFFFF"
+                        android:textSize="11sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Bottom CTA Action Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <Button
+                    android:id="@+id/btnTestPredictionView"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="TEST VIEW"
+                    android:textColor="#18181B"
+                    android:backgroundTint="#00FF66"
+                    android:textStyle="bold"
+                    app:cornerRadius="16dp" />
+
+                <Button
+                    android:id="@+id/btnSaveConfig"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="SAVE"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#2D2D30"
+                    android:textStyle="bold"
+                    app:cornerRadius="16dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</androidx.cardview.widget.CardView>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_calls"
+        android:icon="@drawable/ic_call"
+        android:title="Calls" />
+    <item
+        android:id="@+id/nav_messages"
+        android:icon="@drawable/ic_help"
+        android:title="Messages" />
+    <item
+        android:id="@+id/nav_scams"
+        android:icon="@drawable/ic_help"
+        android:title="Scams" />
+    <item
+        android:id="@+id/nav_premium"
+        android:icon="@drawable/ic_settings"
+        android:title="Premium" />
+    <item
+        android:id="@+id/nav_voicemail"
+        android:icon="@drawable/ic_help"
+        android:title="Voicemail" />
+</menu>

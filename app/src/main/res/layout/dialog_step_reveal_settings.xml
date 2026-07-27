@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardBackgroundColor="#FF18181B"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="0dp">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Title & Status -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Step-by-Step Reveal"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/btnCloseStepRevealDialog"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_alignParentEnd="true"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    app:tint="#FFFFFF" />
+            </RelativeLayout>
+
+            <!-- Main Toggle Switch -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="#33FFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp">
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_check_list"
+                        app:tint="#FFFFFF"/>
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:text="Enable Step Reveal"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold"/>
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/swStepRevealEnable"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:thumbTint="#FFFFFF"
+                        app:trackTint="@color/dialer_green" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Custom Sequence Configuration (Dropdown/Pre-sets or Text Edit) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Trigger Sequence Configuration"
+                android:textColor="#CCFFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Enter comma-separated triggers (TOUCH, PROXIMITY, FACE_DOWN, LIGHT, MAGNETIC, TILT)."
+                android:textColor="#88FFFFFF"
+                android:textSize="10sp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="16dp">
+                <EditText
+                    android:id="@+id/dialogEtStepSequence"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="TOUCH,PROXIMITY,FACE_DOWN,LIGHT,TOUCH"
+                    android:textColorHint="#66FFFFFF"
+                    android:textColor="#FFFFFF"
+                    android:gravity="center"
+                    android:background="@drawable/bg_edit_text"
+                    android:textSize="13sp"/>
+                <Button
+                    android:id="@+id/dialogBtnSaveStepSequence"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
+                    android:text="SAVE"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="@color/dialer_green"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
+
+            <!-- Help/Guide text -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="How it works:\n1. Enter a 5-digit number and press '=' to save and arm the trick.\n2. The display resets to '0'.\n3. Trigger the sensors in sequence to reveal each digit one-by-one!\n4. On the final step, tap the screen where you want the ghost digit to fly in."
+                android:textColor="#88FFFFFF"
+                android:textSize="11sp" />
+        </LinearLayout>
+    </ScrollView>
+</androidx.cardview.widget.CardView>

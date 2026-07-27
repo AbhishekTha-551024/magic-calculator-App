@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "503275768638",
+    "project_id": "swift-482605",
+    "storage_bucket": "swift-482605.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:503275768638:android:e9d6fe86c4302de07c3a6f",
+        "android_client_info": {
+          "package_name": "com.magic.calculator"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "503275768638-o9rh63phatafpkodtm7rvvhkua7eilur.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDa4NczTKqkvj906Pybk62xg_8q4hgQCkM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "503275768638-o9rh63phatafpkodtm7rvvhkua7eilur.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

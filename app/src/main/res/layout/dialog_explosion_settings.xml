@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardBackgroundColor="#FF18181B"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="0dp">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Title & Status -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Button Explosion Force"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/btnCloseExplosionDialog"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_alignParentEnd="true"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    app:tint="#FFFFFF" />
+            </RelativeLayout>
+
+            <!-- Main Toggle Switch -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="#33FFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp">
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_magic"
+                        app:tint="#FF9800"/>
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:text="Enable Button Explosion"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold"/>
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/dialogSwExplosionEnable"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:thumbTint="#FFFFFF"
+                        app:trackTint="@color/dialer_green" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Restoration Trigger Mode -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Restoration Trigger Mode"
+                android:textColor="#CCFFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="#22FFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    
+                    <RadioGroup
+                        android:id="@+id/dialogRgExplosionTrigger"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                        <RadioButton
+                            android:id="@+id/dialogRbExplosionProximity"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Wave (Proximity Sensor)"
+                            android:textColor="@color/white"
+                            android:buttonTint="@color/dialer_green"
+                            android:textSize="15sp"
+                            android:layout_marginBottom="8dp" />
+                        <RadioButton
+                            android:id="@+id/dialogRbExplosionMagnetic"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Magnetic (Magnet / Ring Force)"
+                            android:textColor="@color/white"
+                            android:buttonTint="@color/dialer_green"
+                            android:textSize="15sp" />
+                    </RadioGroup>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Info text -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="How to perform:\n1. Enable Explosion. Tap digits on calculator.\n2. Specator presses any button, the dialpad explodes and scatters into thousands of pieces!\n3. Wave your hand over proximity sensor or bring magnetic ring close to instantly restore dialpad!"
+                android:textColor="#88FFFFFF"
+                android:textSize="11sp"
+                android:lineSpacingMultiplier="1.2"
+                android:gravity="center" />
+        </LinearLayout>
+    </ScrollView>
+</androidx.cardview.widget.CardView>

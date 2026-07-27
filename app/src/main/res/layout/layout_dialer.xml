@@ -1,0 +1,657 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/dialerRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dialer_bg"
+    android:visibility="gone"
+    tools:visibility="visible">
+
+    <!-- Header Area -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/dialerHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="32dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/tvMainTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:text="Dial"
+            android:textColor="@color/dialer_text_primary"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/ivSelect"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="20dp"
+            android:src="@drawable/ic_check_list"
+            app:layout_constraintBottom_toBottomOf="@id/tvMainTitle"
+            app:layout_constraintEnd_toStartOf="@id/ivMore"
+            app:layout_constraintTop_toTopOf="@id/tvMainTitle"
+            app:tint="@color/dialer_text_primary" />
+
+        <ImageView
+            android:id="@+id/ivMore"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="20dp"
+            android:src="@drawable/ic_menu"
+            app:layout_constraintBottom_toBottomOf="@id/tvMainTitle"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/tvMainTitle"
+            app:tint="@color/dialer_text_primary" />
+
+        <!-- Sub Tabs (All / Missed) -->
+        <LinearLayout
+            android:id="@+id/subTabs"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/tvMainTitle">
+
+            <LinearLayout
+                android:id="@+id/tabAll"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:background="?attr/selectableItemBackground">
+                <TextView
+                    android:id="@+id/tvTabAll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="All"
+                    android:textColor="@color/dialer_text_primary"
+                    android:textSize="16sp" />
+                <View
+                    android:id="@+id/indicatorAll"
+                    android:layout_width="60dp"
+                    android:layout_height="3dp"
+                    android:layout_marginTop="4dp"
+                    android:background="@color/dialer_green" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tabMissed"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:background="?attr/selectableItemBackground">
+                <TextView
+                    android:id="@+id/tvTabMissed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Missed"
+                    android:textColor="@color/dialer_text_secondary"
+                    android:textSize="16sp" />
+                <View
+                    android:id="@+id/indicatorMissed"
+                    android:layout_width="60dp"
+                    android:layout_height="3dp"
+                    android:layout_marginTop="4dp"
+                    android:background="@color/dialer_green"
+                    android:visibility="invisible" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Content Area -->
+    <FrameLayout
+        android:id="@+id/contentFrame"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/bottomNav"
+        app:layout_constraintTop_toBottomOf="@id/dialerHeader">
+
+        <!-- Call Logs -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvCallLog"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="100dp" />
+
+        <!-- Contacts List -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvContacts"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="100dp"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+    <!-- Bottom Navigation -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="24dp"
+        android:background="@color/dialer_bg"
+        android:elevation="45dp"
+        app:itemIconTint="@color/dialer_text_secondary"
+        app:itemTextColor="@color/dialer_text_secondary"
+        app:labelVisibilityMode="labeled"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:menu="@menu/system_dialer_menu" />
+
+    <!-- Dial Pad Floating Toggle -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="24dp"
+        android:src="@drawable/ic_dialpad"
+        app:backgroundTint="@color/dialer_green"
+        app:layout_constraintBottom_toTopOf="@id/bottomNav"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@color/white" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddContact"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="24dp"
+        android:src="@drawable/ic_add"
+        android:visibility="gone"
+        app:backgroundTint="@color/dialer_green"
+        app:layout_constraintBottom_toTopOf="@id/bottomNav"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@color/white" />
+
+    <!-- Real Dial Pad Overlay (Sliding from bottom) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/dialPadOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="#00000000"
+        android:elevation="40dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/bottomNav"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- Background Dimmer (Touch to close) -->
+        <View
+            android:id="@+id/vDimmer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#05000000" />
+
+        <!-- Dial Pad Content -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/dialer_bg"
+            android:paddingBottom="40dp"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <TextView
+                android:id="@+id/tvDialNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text=""
+                android:textColor="@color/black"
+                android:textSize="36sp"
+                android:fontFamily="sans-serif-light"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <GridLayout
+                android:id="@+id/dialGrid"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="25dp"
+                android:layout_marginTop="20dp"
+                android:columnCount="3"
+                android:rowCount="4"
+                app:layout_constraintTop_toBottomOf="@id/tvDialNumber">
+                
+                <LinearLayout android:id="@+id/dial1" style="@style/SystemDialButtonLayout" android:layout_columnWeight="1">
+                    <TextView style="@style/SystemDialButtonText" android:text="1" />
+                    <ImageView android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_voicemail" app:tint="@color/dialer_text_secondary" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/dial2" style="@style/SystemDialButtonLayout" android:layout_columnWeight="1">
+                    <TextView style="@style/SystemDialButtonText" android:text="2" />
+                    <TextView style="@style/SystemDialButtonLetters" android:text="ABC" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/dial3" style="@style/SystemDialButtonLayout" android:layout_columnWeight="1">
+                    <TextView style="@style/SystemDialButtonText" android:text="3" />
+                    <TextView style="@style/SystemDialButtonLetters" android:text="DEF" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/dial4" style="@style/SystemDialButtonLayout" android:layout_columnWeight="1">
+                    <TextView style="@style/SystemDialButtonText" android:text="4" />
+                    <TextView style="@style/SystemDialButtonLetters" android:text="GHI" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/dial5" style="@style/SystemDialButtonLayout" android:layout_columnWeight="1">
+                    <TextView style="@style/SystemDialButtonText" android:text="5" />
+                    <TextView style="@style/SystemDialButtonLetters" android:text="JKL" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/dial6" style="@style/SystemDialButtonLayout" android:layout_columnWeight="1">
+                    <TextView style="@style/SystemDialButtonText" android:text="6" />
+                    <TextView style="@style/SystemDialButtonLetters" android:text="MNO" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/dial7" style="@style/SystemDialButtonLayout" android:layout_columnWeight="1">
+                    <TextView style="@style/SystemDialButtonText" android:text="7" />
+                    <TextView style="@style/SystemDialButtonLetters" android:text="PQRS" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/dial8" style="@style/SystemDialButtonLayout" android:layout_columnWeight="1">
+                    <TextView style="@style/SystemDialButtonText" android:text="8" />
+                    <TextView style="@style/SystemDialButtonLetters" android:text="TUV" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/dial9" style="@style/SystemDialButtonLayout" android:layout_columnWeight="1">
+                    <TextView style="@style/SystemDialButtonText" android:text="9" />
+                    <TextView style="@style/SystemDialButtonLetters" android:text="WXYZ" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/dialStar" style="@style/SystemDialButtonLayout" android:layout_columnWeight="1">
+                    <TextView style="@style/SystemDialButtonText" android:text="*" />
+                    <TextView style="@style/SystemDialButtonLetters" android:text=" " />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/dial0" style="@style/SystemDialButtonLayout" android:layout_columnWeight="1">
+                    <TextView style="@style/SystemDialButtonText" android:text="0" />
+                    <TextView style="@style/SystemDialButtonLetters" android:text="+" />
+                </LinearLayout>
+                <LinearLayout android:id="@+id/dialHash" style="@style/SystemDialButtonLayout" android:layout_columnWeight="1">
+                    <TextView style="@style/SystemDialButtonText" android:text="#" />
+                    <TextView style="@style/SystemDialButtonLetters" android:text=" " />
+                </LinearLayout>
+            </GridLayout>
+
+            <!-- Bottom Action Row -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/dialGrid">
+
+                <ImageView
+                    android:id="@+id/btnDialMenu"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="40dp"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_dial_menu"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/dialer_text_secondary" />
+
+                <ImageButton
+                    android:id="@+id/btnCall"
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    android:background="@drawable/circle_green"
+                    android:src="@drawable/ic_call"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/white" />
+
+                <ImageButton
+                    android:id="@+id/btnDialBackspace"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_backspace_rect"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/dialer_text_secondary" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Contact Details Overlay View (Completely replicates native Android phone details) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutContactDetails"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FF121212"
+        android:elevation="50dp"
+        android:visibility="gone">
+
+        <!-- Top Tool Bar -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/detailsToolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="32dp"
+            android:paddingBottom="8dp"
+            android:paddingHorizontal="16dp"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/btnDetailsBack"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_arrow_back"
+                app:tint="#FFFFFF"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="32dp"
+                android:text="Details"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@id/btnDetailsBack"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <ImageView
+                android:id="@+id/btnDetailsEdit"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_edit"
+                app:tint="#FFFFFF"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- Profile Area -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/detailsToolbar">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingTop="32dp"
+                android:paddingBottom="24dp">
+
+                <!-- Large Round Avatar -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cvDetailsAvatar"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    app:cardCornerRadius="60dp"
+                    app:cardBackgroundColor="#555555"
+                    app:cardElevation="0dp">
+                    
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/ic_contacts"
+                        android:padding="28dp"
+                        app:tint="#CCCCCC" />
+                </androidx.cardview.widget.CardView>
+
+                <!-- Name Text -->
+                <TextView
+                    android:id="@+id/tvDetailsName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:text="Papa"
+                    android:textColor="#FFFFFF"
+                    android:textSize="28sp"
+                    android:textStyle="bold" />
+
+                <!-- 3 Action Buttons Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <!-- Message Button -->
+                    <LinearLayout
+                        android:id="@+id/btnDetailsMessage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:layout_marginHorizontal="20dp">
+                        
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_message"
+                            android:padding="12dp"
+                            android:background="@drawable/circle_green"
+                            app:tint="#FFFFFF" />
+                        
+                        <TextView
+                            android:id="@+id/tvDetailsMessageLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Message"
+                            android:textColor="#AAAAAA"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <!-- Call Button -->
+                    <LinearLayout
+                        android:id="@+id/btnDetailsCall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:layout_marginHorizontal="20dp">
+                        
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_call"
+                            android:padding="12dp"
+                            android:background="@drawable/circle_green"
+                            app:tint="#FFFFFF" />
+                        
+                        <TextView
+                            android:id="@+id/tvDetailsCallLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Call"
+                            android:textColor="#AAAAAA"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <!-- Video Button -->
+                    <LinearLayout
+                        android:id="@+id/btnDetailsVideo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:layout_marginHorizontal="20dp">
+                        
+                        <ImageView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:src="@drawable/ic_video"
+                            android:padding="12dp"
+                            android:background="@drawable/circle_green"
+                            app:tint="#FFFFFF" />
+                        
+                        <TextView
+                            android:id="@+id/tvDetailsVideoLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Video"
+                            android:textColor="#AAAAAA"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Phone number detail view -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="24dp"
+                    android:layout_marginTop="32dp"
+                    android:gravity="start">
+
+                    <TextView
+                        android:id="@+id/tvDetailsPhone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="+918959777541"
+                        android:textColor="#FFFFFF"
+                        android:textSize="20sp" />
+
+                    <TextView
+                        android:id="@+id/tvDetailsCarrier"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Maharashtra Mobile Telephony"
+                        android:textColor="#888888"
+                        android:textSize="14sp" />
+
+                    <View
+                        android:id="@+id/vDetailsDivider"
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#222222"
+                        android:layout_marginTop="24dp" />
+
+                    <!-- Call Logs Header -->
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="24dp">
+
+                        <TextView
+                            android:id="@+id/tvDetailsCallLogsTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Call logs"
+                            android:textColor="#FFFFFF"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <TextView
+                            android:id="@+id/tvDetailsMoreLink"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="More >"
+                            android:textColor="#888888"
+                            android:textSize="14sp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    <!-- Dummy Call Log Row 1 -->
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp">
+
+                        <TextView
+                            android:id="@+id/tvLogType1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Called"
+                            android:textColor="#FFFFFF"
+                            android:textSize="16sp"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <TextView
+                            android:id="@+id/tvLogDuration1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="15 min 50 sec"
+                            android:textColor="#888888"
+                            android:textSize="14sp"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/tvLogType1" />
+
+                        <TextView
+                            android:id="@+id/tvLogTime1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="2026/05/17 08:39 PM"
+                            android:textColor="#888888"
+                            android:textSize="14sp"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    <!-- Dummy Call Log Row 2 -->
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp">
+
+                        <TextView
+                            android:id="@+id/tvLogType2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Answered"
+                            android:textColor="#FFFFFF"
+                            android:textSize="16sp"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <TextView
+                            android:id="@+id/tvLogDuration2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="2 min 39 sec"
+                            android:textColor="#888888"
+                            android:textSize="14sp"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@id/tvLogType2" />
+
+                        <TextView
+                            android:id="@+id/tvLogTime2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="2026/05/17 01:34 PM"
+                            android:textColor="#888888"
+                            android:textSize="14sp"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+        </ScrollView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

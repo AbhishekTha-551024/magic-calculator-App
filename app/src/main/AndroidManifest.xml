@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FIXES APPLIED:
+    1. Added PremiumActivity to the manifest (it was missing — caused crashes)
+    2. All other entries unchanged
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <application
+        android:allowBackup="true"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MagicCalculator">
+
+        <!-- ══════════════════════════════════════════════════════════
+             LOGIN ACTIVITY — LAUNCHER (first screen shown)
+             ══════════════════════════════════════════════════════════ -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- ══════════════════════════════════════════════════════════
+             MAIN ACTIVITY — opens after login
+             ══════════════════════════════════════════════════════════ -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|screenSize" />
+
+        <!-- ══════════════════════════════════════════════════════════
+             PREMIUM ACTIVITY — paywall screen (was MISSING — now added)
+             ══════════════════════════════════════════════════════════ -->
+        <activity
+            android:name=".PremiumActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.MagicCalculator" />
+
+        <activity
+            android:name=".SettingsActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".SecretActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".CallingActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.GalleryActivity"
+            android:exported="true"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.PhotoViewerActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.moilock.MoiLockActivity"
+            android:screenOrientation="portrait"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+        <activity
+            android:name=".ui.moilock.MoiLockSetupActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+        <activity
+            android:name=".ui.moilock.MoiLockUnlockActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+        <!-- MoiLock Services & Receivers -->
+        <service
+            android:name=".ui.moilock.MoiLockService"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Magic Trick Fake Lock Screen Simulation" />
+        </service>
+
+        <receiver
+            android:name=".ui.moilock.MoiDeviceAdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".ui.moilock.ScreenReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".ui.moilock.MoiBootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.magic.calculator.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
+
+</manifest>

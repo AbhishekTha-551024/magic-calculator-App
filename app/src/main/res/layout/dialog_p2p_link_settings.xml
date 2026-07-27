@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardBackgroundColor="#FF12121A"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="0dp">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Title Header Row -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:src="@drawable/ic_share"
+                        app:tint="#00E5FF"
+                        android:layout_marginEnd="10dp" />
+
+                    <TextView
+                        android:id="@+id/tvP2PTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Online Magic Link"
+                        android:textColor="#FFFFFF"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:fontFamily="sans-serif-medium" />
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/btnCloseP2PDialog"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:padding="2dp"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    app:tint="#88FFFFFF" />
+            </RelativeLayout>
+
+            <!-- Subtitle -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sync with a partner over the internet in real-time"
+                android:textColor="#88FFFFFF"
+                android:textSize="13sp"
+                android:layout_marginBottom="20dp" />
+
+            <!-- Master Enable Switch -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Enable Magic Link"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swP2PEnable"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutP2PContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                
+            <!-- ────────────────────────────────────────────────── -->
+            <!-- MY MAGIC ID CARD -->
+            <!-- ────────────────────────────────────────────────── -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                app:cardBackgroundColor="#1A00E5FF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="MY MAGIC ID"
+                        android:textColor="#00E5FF"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.12"
+                        android:layout_marginBottom="6dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tvMyMagicId"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Loading..."
+                            android:textColor="#FFFFFF"
+                            android:textSize="28sp"
+                            android:textStyle="bold"
+                            android:fontFamily="monospace"
+                            android:letterSpacing="0.08" />
+
+                        <ImageView
+                            android:id="@+id/btnCopyMagicId"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:src="@android:drawable/ic_menu_share"
+                            android:padding="6dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            app:tint="#00E5FF" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Share this ID with your partner to connect"
+                        android:textColor="#6600E5FF"
+                        android:textSize="12sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- ────────────────────────────────────────────────── -->
+            <!-- CONNECT TO PARTNER -->
+            <!-- ────────────────────────────────────────────────── -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                app:cardBackgroundColor="#22FFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="CONNECT TO PARTNER"
+                        android:textColor="#AAFFFFFF"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.12"
+                        android:layout_marginBottom="10dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <EditText
+                            android:id="@+id/etPartnerMagicId"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:hint="Partner's Magic ID (e.g. M-1234)"
+                            android:textColorHint="#55FFFFFF"
+                            android:textColor="#FFFFFF"
+                            android:textSize="15sp"
+                            android:fontFamily="monospace"
+                            android:inputType="text"
+                            android:imeOptions="actionSend"
+                            android:textAllCaps="true"
+                            android:background="@null"
+                            android:layout_marginEnd="8dp"
+                            android:paddingStart="4dp" />
+
+                        <Button
+                            android:id="@+id/btnSendRequest"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:text="SEND"
+                            android:textSize="13sp"
+                            android:textColor="#000000"
+                            android:textStyle="bold"
+                            android:backgroundTint="#00E5FF"
+                            android:paddingStart="18dp"
+                            android:paddingEnd="18dp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- ────────────────────────────────────────────────── -->
+            <!-- INCOMING REQUEST BANNER (hidden by default) -->
+            <!-- ────────────────────────────────────────────────── -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardIncomingRequest"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="#33FFCC00"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⚡ INCOMING REQUEST"
+                        android:textColor="#FFCC00"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.12"
+                        android:layout_marginBottom="6dp" />
+
+                    <TextView
+                        android:id="@+id/tvIncomingRequestFrom"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Connection request from M-XXXX"
+                        android:textColor="#FFFFFF"
+                        android:textSize="15sp"
+                        android:layout_marginBottom="12dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnAcceptRequest"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:text="ACCEPT ✓"
+                            android:textColor="#000000"
+                            android:textStyle="bold"
+                            android:backgroundTint="#00FF66"
+                            android:layout_marginEnd="8dp" />
+
+                        <Button
+                            android:id="@+id/btnDeclineRequest"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:text="DECLINE ✗"
+                            android:textColor="#FFFFFF"
+                            android:textStyle="bold"
+                            android:backgroundTint="#FF4444" />
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- ────────────────────────────────────────────────── -->
+            <!-- CONNECTION STATUS -->
+            <!-- ────────────────────────────────────────────────── -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                app:cardBackgroundColor="#22FFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="CONNECTION STATUS"
+                        android:textColor="#AAFFFFFF"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.12"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/tvP2PStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="🔴 Not Connected"
+                        android:textColor="#FF4444"
+                        android:textSize="15sp"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Mirror Mode Toggle -->
+                    <LinearLayout
+                        android:id="@+id/layoutMirrorModeRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Mirror Typing Mode"
+                                android:textColor="#FFFFFF"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="What you type appears on partner's screen"
+                                android:textColor="#88FFFFFF"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/swMirrorMode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="false" />
+                    </LinearLayout>
+
+                    <!-- Disconnect Button -->
+                    <Button
+                        android:id="@+id/btnDisconnect"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:text="DISCONNECT"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:backgroundTint="#FF4444"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- ────────────────────────────────────────────────── -->
+            <!-- REMOTE TRIGGER CONTROLS (visible when connected) -->
+            <!-- ────────────────────────────────────────────────── -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardRemoteTriggers"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="#22FFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="REMOTE TRIGGERS"
+                        android:textColor="#AAFFFFFF"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.12"
+                        android:layout_marginBottom="12dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnP2PTriggerFlip"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:text="⚡ FLIP"
+                            android:textColor="#000000"
+                            android:textStyle="bold"
+                            android:backgroundTint="#00E5FF"
+                            android:layout_marginEnd="8dp" />
+
+                        <Button
+                            android:id="@+id/btnP2PTriggerExplosion"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:text="💥 EXPLODE"
+                            android:textColor="#000000"
+                            android:textStyle="bold"
+                            android:backgroundTint="#FF9100" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="These trigger magic effects on the partner's calculator"
+                        android:textColor="#55FFFFFF"
+                        android:textSize="12sp"
+                        android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</androidx.cardview.widget.CardView>

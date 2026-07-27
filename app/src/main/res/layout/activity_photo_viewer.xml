@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- Top Bar -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="48dp"
+        android:paddingBottom="16dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/ivBack"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="16dp"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="#FFFFFF"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tvCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="1/30"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            app:layout_constraintBottom_toBottomOf="@+id/ivBack"
+            app:layout_constraintStart_toEndOf="@+id/ivBack"
+            app:layout_constraintTop_toTopOf="@+id/ivBack" />
+
+        <ImageView
+            android:id="@+id/ivInfo"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="16dp"
+            android:src="@drawable/ic_info"
+            app:tint="#FFFFFF"
+            app:layout_constraintBottom_toBottomOf="@+id/ivBack"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/ivBack" />
+
+        <ImageView
+            android:id="@+id/ivHeart"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="16dp"
+            android:src="@drawable/ic_favorites"
+            app:tint="#FFFFFF"
+            app:layout_constraintBottom_toBottomOf="@+id/ivInfo"
+            app:layout_constraintEnd_toStartOf="@+id/ivInfo"
+            app:layout_constraintTop_toTopOf="@+id/ivInfo" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- RAW Text -->
+    <TextView
+        android:id="@+id/tvRaw"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="16dp"
+        android:text="RAW"
+        android:textColor="#AAAAAA"
+        android:textSize="12sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/topBar" />
+
+    <!-- ViewPager for Swiping -->
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPager"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintBottom_toTopOf="@+id/bottomBar"
+        app:layout_constraintTop_toBottomOf="@+id/tvRaw" />
+
+    <!-- Bottom Bar -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingBottom="48dp"
+        android:paddingTop="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout
+            android:id="@+id/btnShare"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless">
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/ic_share"
+                app:tint="#FFFFFF" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Share"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btnEdit"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless">
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/ic_edit"
+                app:tint="#FFFFFF" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Edit"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btnDelete"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless">
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/ic_delete"
+                app:tint="#FFFFFF" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Delete"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btnMore"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless">
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/ic_more_vert"
+                app:tint="#FFFFFF" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="More"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Metadata Details Overlay Card Container -->
+    <FrameLayout
+        android:id="@+id/metadataContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#99000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="320dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            app:cardBackgroundColor="#D9212121"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <!-- Name Field -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Name"
+                    android:textColor="#88FFFFFF"
+                    android:textSize="13sp" />
+                <TextView
+                    android:id="@+id/tvMetaName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="20d42bdb73547300fe5edb8fe6f1599b"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp" />
+
+                <!-- Time Field -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Time"
+                    android:textColor="#88FFFFFF"
+                    android:textSize="13sp" />
+                <TextView
+                    android:id="@+id/tvMetaTime"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="5/17/26 6:19 PM"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp" />
+
+                <!-- Size Field -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Size"
+                    android:textColor="#88FFFFFF"
+                    android:textSize="13sp" />
+                <TextView
+                    android:id="@+id/tvMetaSize"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="179 KB  736 × 1288"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp" />
+
+                <!-- Parameters Field -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Parameters"
+                    android:textColor="#88FFFFFF"
+                    android:textSize="13sp" />
+                <TextView
+                    android:id="@+id/tvMetaParameters"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="No camera information"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp" />
+
+                <!-- Color Histogram Visualizer -->
+                <ImageView
+                    android:id="@+id/ivMetaHistogram"
+                    android:layout_width="match_parent"
+                    android:layout_height="68dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="16dp"
+                    android:scaleType="fitXY" />
+
+                <!-- Path Field -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Path"
+                    android:textColor="#88FFFFFF"
+                    android:textSize="13sp" />
+                <TextView
+                    android:id="@+id/tvMetaPath"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Internal storage/Pictures/100PINT/Pins/20d42bdb73547300fe5edb8fe6f1599b.jpg"
+                    android:textColor="#CCFFFFFF"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </FrameLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

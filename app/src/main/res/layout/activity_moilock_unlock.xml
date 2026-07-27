@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <TextView
+        android:id="@+id/tvUnlocked"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="✅ UNLOCKED!"
+        android:textColor="#00FF00"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:layout_marginTop="100dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <TextView
+        android:id="@+id/tvPinDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="60dp"
+        android:textColor="#FFFFFF"
+        android:textSize="48sp"
+        android:fontFamily="sans-serif-medium"
+        app:layout_constraintTop_toBottomOf="@+id/tvUnlocked"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="last ↑"
+        android:textColor="#FFD700"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@+id/tvPinDisplay"
+        app:layout_constraintEnd_toEndOf="@+id/tvPinDisplay"/>
+
+    <Button
+        android:id="@+id/btnLockAgain"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="LOCK AGAIN"
+        android:backgroundTint="#333333"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="100dp"
+        android:paddingHorizontal="32dp"
+        android:paddingVertical="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Simple Confetti Overlay -->
+    <com.magic.calculator.ui.moilock.ConfettiView
+        android:id="@+id/confettiView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

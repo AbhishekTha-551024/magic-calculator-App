@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- Layer 1: Wallpaper -->
+    <ImageView
+        android:id="@+id/ivWallpaper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop" />
+
+    <!-- Clock Triple Tap Area -->
+    <View
+        android:id="@+id/vClockTouchArea"
+        android:layout_width="0dp"
+        android:layout_height="150dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Layer 3: Clock and Date -->
+    <TextClock
+        android:id="@+id/tvTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="60dp"
+        android:textColor="#FFFFFF"
+        android:textSize="80sp"
+        android:fontFamily="sans-serif-thin"
+        android:format12Hour="h:mm"
+        android:format24Hour="HH:mm"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextClock
+        android:id="@+id/tvDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:format12Hour="EEEE, MMMM d"
+        android:format24Hour="EEEE, MMMM d"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvTime" />
+
+    <TextView
+        android:id="@+id/tvFakeDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Password created on\nMarch 3, 2024"
+        android:textAlignment="center"
+        android:textColor="#88FFFFFF"
+        android:textSize="12sp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvDate" />
+
+    <!-- Layer 4: Fake Notification -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cvFakeNotification"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="32dp"
+        app:cardBackgroundColor="#88000000"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:layout_constraintTop_toBottomOf="@+id/tvFakeDate">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp">
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_messages"
+                app:tint="#FFFFFF"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginStart="12dp">
+                <TextView
+                    android:id="@+id/tvNotifTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Messages"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"/>
+                <TextView
+                    android:id="@+id/tvNotifText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mom: Don't forget dinner tonight."
+                    android:textColor="#DDFFFFFF"/>
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Base Swipe Hint Container (Visible initially) -->
+    <LinearLayout
+        android:id="@+id/llSwipeHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginBottom="40dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+        
+        <ImageView
+            android:id="@+id/ivSwipeArrow"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_chevron_up"
+            app:tint="#FFFFFF" />
+            
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Swipe up to unlock"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- Layer 2 & 6: PIN Pad Overlay (Starts hidden off-screen) -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/clPinPadContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:translationY="1000dp"
+        android:visibility="gone"
+        android:background="#66000000">
+
+        <LinearLayout
+            android:id="@+id/llDots"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="80dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView android:id="@+id/dot1" android:layout_width="16dp" android:layout_height="16dp" android:layout_margin="12dp" android:src="@drawable/ic_dot_empty" />
+            <ImageView android:id="@+id/dot2" android:layout_width="16dp" android:layout_height="16dp" android:layout_margin="12dp" android:src="@drawable/ic_dot_empty" />
+            <ImageView android:id="@+id/dot3" android:layout_width="16dp" android:layout_height="16dp" android:layout_margin="12dp" android:src="@drawable/ic_dot_empty" />
+            <ImageView android:id="@+id/dot4" android:layout_width="16dp" android:layout_height="16dp" android:layout_margin="12dp" android:src="@drawable/ic_dot_empty" />
+            <ImageView android:id="@+id/dot5" android:layout_width="16dp" android:layout_height="16dp" android:layout_margin="12dp" android:src="@drawable/ic_dot_empty" />
+        </LinearLayout>
+
+        <GridLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="60dp"
+            android:columnCount="3"
+            android:rowCount="4"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <!-- Row 1 -->
+            <TextView android:id="@+id/btn1" style="@style/PinButton" android:text="1" />
+            <TextView android:id="@+id/btn2" style="@style/PinButton" android:text="2" />
+            <TextView android:id="@+id/btn3" style="@style/PinButton" android:text="3" />
+            
+            <!-- Row 2 -->
+            <TextView android:id="@+id/btn4" style="@style/PinButton" android:text="4" />
+            <TextView android:id="@+id/btn5" style="@style/PinButton" android:text="5" />
+            <TextView android:id="@+id/btn6" style="@style/PinButton" android:text="6" />
+            
+            <!-- Row 3 -->
+            <TextView android:id="@+id/btn7" style="@style/PinButton" android:text="7" />
+            <TextView android:id="@+id/btn8" style="@style/PinButton" android:text="8" />
+            <TextView android:id="@+id/btn9" style="@style/PinButton" android:text="9" />
+            
+            <!-- Row 4 -->
+            <Space android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="10dp" />
+            <TextView android:id="@+id/btn0" style="@style/PinButton" android:text="0" />
+            <ImageView android:id="@+id/btnDel" android:layout_width="80dp" android:layout_height="80dp" android:layout_margin="10dp" android:padding="24dp" android:src="@drawable/ic_backspace" app:tint="#FFFFFF" android:background="?selectableItemBackgroundBorderless" />
+        </GridLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

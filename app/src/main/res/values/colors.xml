@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- Screenshot Palette -->
+    <color name="calc_bg">#171717</color>
+    <color name="calc_btn_num">#3D3D3D</color>
+    <color name="calc_btn_action">#A5A5A5</color>
+    <color name="calc_btn_operator">#FF9500</color>
+    <color name="calc_text_white">#FFFFFF</color>
+    <color name="calc_text_black">#000000</color>
+
+    <!-- System Dialer Palette (New) -->
+    <color name="dialer_bg">#FDFBF5</color>
+    <color name="dialer_green">#388E3C</color>
+    <color name="dialer_text_primary">#212121</color>
+    <color name="dialer_text_secondary">#757575</color>
+    <color name="dialer_btn_green">#26D367</color>
+    <color name="dialer_divider">#EEEEEE</color>
+
+    <!-- Keeping magic colors -->
+    <color name="neon_cyan">#00FFFF</color>
+    <color name="neon_green">#00FF00</color>
+</resources>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/search_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    android:paddingTop="32dp">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:text="Search"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cvSearch"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_margin="24dp"
+        app:cardCornerRadius="25dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="#1A1A1A"
+        app:layout_constraintTop_toBottomOf="@+id/tvTitle">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_search"
+                app:tint="#BDBDBD" />
+
+            <EditText
+                android:id="@+id/etSearch"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@null"
+                android:hint="Search for photos, people..."
+                android:textColorHint="#757575"
+                android:paddingStart="12dp"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <TextView
+        android:id="@+id/tvRecentSearches"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="Recent Searches"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="@+id/cvSearch"
+        app:layout_constraintTop_toBottomOf="@+id/cvSearch" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

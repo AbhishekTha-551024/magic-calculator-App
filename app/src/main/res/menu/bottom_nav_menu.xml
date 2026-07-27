@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_magic"
+        android:icon="@drawable/ic_help" 
+        android:title="Magic" />
+    <item
+        android:id="@+id/nav_edit"
+        android:icon="@drawable/ic_help"
+        android:title="Edit" />
+    <item
+        android:id="@+id/nav_theme"
+        android:icon="@drawable/ic_settings"
+        android:title="Theme" />
+    <item
+        android:id="@+id/nav_calc"
+        android:icon="@drawable/ic_settings"
+        android:title="Calc" />
+</menu>

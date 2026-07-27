@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/photos_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    android:paddingTop="32dp">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:text="Photos"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/icSettings"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_marginEnd="24dp"
+        android:src="@drawable/ic_settings"
+        app:tint="#FFFFFF"
+        app:layout_constraintBottom_toBottomOf="@+id/tvTitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/tvTitle" />
+
+    <ImageView
+        android:id="@+id/icSelect"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_marginEnd="16dp"
+        android:src="@drawable/ic_check_list"
+        app:tint="#FFFFFF"
+        app:layout_constraintBottom_toBottomOf="@+id/icSettings"
+        app:layout_constraintEnd_toStartOf="@+id/icSettings"
+        app:layout_constraintTop_toTopOf="@+id/icSettings" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvPhotos"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvTitle"
+        tools:listitem="@layout/item_gallery_photo" />
+
+    <TextView
+        android:id="@+id/tvEmpty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="No images found"
+        android:textColor="#88FFFFFF"
+        android:textSize="16sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvTitle" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

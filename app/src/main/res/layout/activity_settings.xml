@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#050505">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- HEADER -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="30dp">
+
+            <Button
+                android:id="@+id/btnBack"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="← Back"
+                android:backgroundTint="#1A1A1A"
+                android:textColor="#00FFFF" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="MAGIC SETTINGS"
+                android:textSize="24sp"
+                android:textColor="#00FFFF"
+                android:textStyle="bold"
+                android:gravity="center" />
+
+            <View
+                android:layout_width="40dp"
+                android:layout_height="1dp" />
+        </LinearLayout>
+
+        <!-- SHAKE SENSITIVITY -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#0F0F0F"
+            android:padding="15dp"
+            android:layout_marginBottom="15dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="10dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Shake Sensitivity"
+                    android:textColor="#E0E0E0"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/textSensitivityValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15 m/s²"
+                    android:textColor="#00FFFF"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <SeekBar
+                android:id="@+id/seekBarSensitivity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="25"
+                android:progress="10"
+                android:layout_marginTop="10dp" />
+        </LinearLayout>
+
+        <!-- SOUND EFFECTS -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#0F0F0F"
+            android:padding="15dp"
+            android:layout_marginBottom="15dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sound Volume"
+                android:textColor="#E0E0E0"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
+
+            <SeekBar
+                android:id="@+id/seekBarSoundVolume"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="80" />
+        </LinearLayout>
+
+        <!-- HAPTIC INTENSITY -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#0F0F0F"
+            android:padding="15dp"
+            android:layout_marginBottom="15dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Haptic Intensity"
+                android:textColor="#E0E0E0"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
+
+            <SeekBar
+                android:id="@+id/seekBarHapticIntensity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="80" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardBackgroundColor="#FF18181B"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="0dp">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Title & Status -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MoiLock Magic Panel"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/btnCloseDialog"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_alignParentEnd="true"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    app:tint="#FFFFFF" />
+            </RelativeLayout>
+
+            <!-- Main Toggle Switch -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="#33FFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="16dp">
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_lock_idle_lock"
+                        app:tint="#FFFFFF"/>
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:text="Enable MoiLock"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold"/>
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/swMoiLockEnable"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:thumbTint="#FFFFFF"
+                        app:trackTint="@color/dialer_green" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Magic Trick Digit (Safety Cheat) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Magic Unlock Digit (Safety Cheat)"
+                android:textColor="#CCFFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="16dp">
+                <EditText
+                    android:id="@+id/dialogEtMoiLockSecret"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="e.g. 5"
+                    android:textColorHint="#66FFFFFF"
+                    android:textColor="#FFFFFF"
+                    android:inputType="number"
+                    android:maxLength="1"
+                    android:gravity="center"
+                    android:background="@drawable/bg_edit_text"/>
+                <Button
+                    android:id="@+id/dialogBtnSaveMoiLockSecret"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
+                    android:text="SAVE"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="@color/dialer_green"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
+
+            <!-- Master PIN (Rescue Reset) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Master Unlock PIN (Rescue Override)"
+                android:textColor="#CCFFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="16dp">
+                <EditText
+                    android:id="@+id/dialogEtMoiLockMasterPin"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:hint="e.g. 11111"
+                    android:textColorHint="#66FFFFFF"
+                    android:textColor="#FFFFFF"
+                    android:inputType="number"
+                    android:maxLength="5"
+                    android:gravity="center"
+                    android:background="@drawable/bg_edit_text"/>
+                <Button
+                    android:id="@+id/dialogBtnSaveMoiLockMaster"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
+                    android:text="SAVE"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="@color/dialer_green"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
+
+            <!-- Custom Wallpaper Button -->
+            <Button
+                android:id="@+id/dialogBtnSelectMoiLockWallpaper"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginBottom="12dp"
+                android:text="SET CUSTOM WALLPAPER"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#44FFFFFF"
+                app:cornerRadius="14dp" />
+
+            <!-- Battery Saver Button -->
+            <Button
+                android:id="@+id/dialogBtnBatterySaver"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginBottom="12dp"
+                android:text="DISABLE BATTERY OPTIMIZATION"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#8A2BE2"
+                app:cornerRadius="14dp" />
+
+            <!-- Test Button -->
+            <Button
+                android:id="@+id/dialogBtnLaunchMoiLock"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginBottom="16dp"
+                android:text="TEST LOCK SCREEN NOW"
+                android:textColor="#000000"
+                android:textStyle="bold"
+                android:backgroundTint="#FFD700"
+                app:cornerRadius="14dp" />
+
+            <!-- Permissions Status -->
+            <TextView
+                android:id="@+id/tvPermissionsStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Permissions Status"
+                android:textColor="#CCFFFFFF"
+                android:textSize="12sp"
+                android:gravity="center" />
+        </LinearLayout>
+    </ScrollView>
+</androidx.cardview.widget.CardView>
