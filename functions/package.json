@@ -1,0 +1,20 @@
+{
+  "name": "magic-calculator-functions",
+  "description": "Firebase Cloud Functions for Magic Calculator Razorpay payments",
+  "private": true,
+  "engines": {
+    "node": "18"
+  },
+  "scripts": {
+    "deploy": "firebase deploy --only functions",
+    "serve": "firebase emulators:start --only functions"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.10.0",
+    "firebase-functions": "^4.5.0",
+    "razorpay": "^2.9.8"
+  },
+  "devDependencies": {
+    "firebase-tools": "^15.24.0"
+  }
+}

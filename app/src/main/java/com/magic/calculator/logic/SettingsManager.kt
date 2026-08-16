@@ -70,7 +70,7 @@ class SettingsManager(context: Context) {
         set(value) = prefs.edit().putString("explosion_trigger", value).apply()
 
     var isExplosionEnabled: Boolean
-        get() = prefs.getBoolean("explosion_enabled", true)
+        get() = prefs.getBoolean("explosion_enabled", false)
         set(value) = prefs.edit().putBoolean("explosion_enabled", value).apply()
 
     var activeSensorTrigger: String

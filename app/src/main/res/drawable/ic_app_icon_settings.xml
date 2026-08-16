@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Rounded Dark Grey Body -->
+    <path
+        android:fillColor="#8E8E93"
+        android:pathData="M20,8h68c6.6,0 12,5.4 12,12v68c0,6.6 -5.4,12 -12,12H20c-6.6,0 -12,-5.4 -12,-12V20c0,-6.6 5.4,-12 12,-12z" />
+    <!-- Center Gear Inner Ring -->
+    <path
+        android:fillColor="#E5E5EA"
+        android:pathData="M54,34c-11,0 -20,9 -20,20s9,20 20,20s20,-9 20,-20s-9,-20 -20,-20z M54,64c-5.5,0 -10,-4.5 -10,-10s4.5,-10 10,-10s10,4.5 10,10s-4.5,10 -10,10z" />
+    <!-- Gear Teeth -->
+    <path
+        android:fillColor="#E5E5EA"
+        android:pathData="M50,22h8v8h-8z M50,78h8v8h-8z M22,50h8v8h-8z M78,50h8v8h-8z M32,32l6,6l-6,6l-6,-6z M70,70l6,6l-6,6l-6,-6z M32,76l6,-6l6,6l-6,6z M70,38l6,-6l6,6l-6,6z" />
+</vector>

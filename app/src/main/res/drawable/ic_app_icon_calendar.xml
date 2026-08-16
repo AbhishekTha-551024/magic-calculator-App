@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Rounded White Body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,8h68c6.6,0 12,5.4 12,12v68c0,6.6 -5.4,12 -12,12H20c-6.6,0 -12,-5.4 -12,-12V20c0,-6.6 5.4,-12 12,-12z" />
+    <!-- Red Top Header -->
+    <path
+        android:fillColor="#FF3B30"
+        android:pathData="M20,8h68c6.6,0 12,5.4 12,12v16H8V20c0,-6.6 5.4,-12 12,-12z" />
+    <!-- Binder Rings -->
+    <path
+        android:fillColor="#CCCCCC"
+        android:pathData="M32,4h6v10h-6z M70,4h6v10h-6z" />
+    <!-- Month Short text bar or dots -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44,22h20v4h-20z" />
+    <!-- Day Number 31 Shape -->
+    <!-- 3 -->
+    <path
+        android:fillColor="#1C1C1E"
+        android:pathData="M34,50h18c2.2,0 4,1.8 4,4v4c0,1.5 -0.8,2.8 -2,3.5c1.2,0.7 2,2 2,3.5v6c0,2.2 -1.8,4 -4,4H34v-5h16v-4H38v-5h12v-3H34V50z" />
+    <!-- 1 -->
+    <path
+        android:fillColor="#1C1C1E"
+        android:pathData="M64,55l-4,3v-5l5,-3h5v25h-6V55z" />
+</vector>

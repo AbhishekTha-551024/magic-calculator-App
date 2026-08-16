@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Rounded Notepad Body (Warm White / Yellow Tint) -->
+    <path
+        android:fillColor="#FFFDF0"
+        android:pathData="M20,8h68c6.6,0 12,5.4 12,12v68c0,6.6 -5.4,12 -12,12H20c-6.6,0 -12,-5.4 -12,-12V20c0,-6.6 5.4,-12 12,-12z" />
+    <!-- Yellow Top Header -->
+    <path
+        android:fillColor="#FFCC00"
+        android:pathData="M20,8h68c6.6,0 12,5.4 12,12v14H8V20c0,-6.6 5.4,-12 12,-12z" />
+    <!-- Notebook Spiral Dots -->
+    <path
+        android:fillColor="#8E8E93"
+        android:pathData="M24,20a3,3 0 1,0 6,0a3,3 0 1,0 -6,0 M42,20a3,3 0 1,0 6,0a3,3 0 1,0 -6,0 M60,20a3,3 0 1,0 6,0a3,3 0 1,0 -6,0 M78,20a3,3 0 1,0 6,0a3,3 0 1,0 -6,0" />
+    <!-- Horizontal Ruled Lines -->
+    <path
+        android:fillColor="#E5E5EA"
+        android:pathData="M22,48h64v3H22z M22,62h64v3H22z M22,76h64v3H22z M22,90h44v3H22z" />
+    <!-- Pencil Accent -->
+    <path
+        android:fillColor="#FF9500"
+        android:pathData="M76,66l12,-12l6,6l-12,12z" />
+    <path
+        android:fillColor="#3A3A3C"
+        android:pathData="M73,69l3,-3l3,3l-4,2z" />
+</vector>

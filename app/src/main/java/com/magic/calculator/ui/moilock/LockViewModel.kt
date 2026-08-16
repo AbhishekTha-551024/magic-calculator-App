@@ -38,7 +38,7 @@ class LockViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun checkPin(pin: String) {
-        if (pin == pinManager.masterPin) {
+        if (pinManager.verifyMasterPin(pin)) {
             // Master PIN unlocks AND resets the trick so it can be performed again immediately
             pinManager.resetLock()
             _unlockStatus.value = UnlockStatus.SUCCESS
@@ -58,7 +58,7 @@ class LockViewModel(application: Application) : AndroidViewModel(application) {
             }
         } else {
             // Second time onwards: Must exactly match the saved permanent PIN
-            if (pin == pinManager.permanentPin) {
+            if (pinManager.verifyPermanentPin(pin)) {
                 _unlockStatus.value = UnlockStatus.SUCCESS
             } else {
                 _unlockStatus.value = UnlockStatus.FAILED

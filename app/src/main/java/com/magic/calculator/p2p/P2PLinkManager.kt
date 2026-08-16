@@ -54,10 +54,21 @@ class P2PLinkManager private constructor() {
             }
         }
 
-        /** Generate a short Magic ID like "M-3847" from firebase uid */
+        /**
+         * Generate a unique Magic ID from the Firebase UID.
+         *
+         * OLD (buggy): "M-${hash % 9000}" → only 9,000 possible IDs → collisions at scale
+         * NEW (fixed): Uses first 6 alphanumeric chars of UID → 36^6 = 2.18 billion combos
+         *
+         * Format: "MC-XXXXXX" where X is uppercase alphanumeric from the UID.
+         * Example: "MC-A3B7KQ"
+         */
         fun generateMagicId(uid: String): String {
-            val hash = uid.hashCode().let { if (it < 0) -it else it }
-            return "M-${(hash % 9000 + 1000)}"
+            // Take the first 6 alphanumeric characters from the UID (UIDs are already random)
+            val alphanum = uid.filter { it.isLetterOrDigit() }.take(6).uppercase()
+            // Pad with zeros if somehow shorter (very unlikely with Firebase UIDs)
+            val padded = alphanum.padEnd(6, '0')
+            return "MC-$padded"
         }
     }
 
@@ -168,9 +179,9 @@ class P2PLinkManager private constructor() {
     fun sendRequest(toMagicId: String, onResult: (success: Boolean, message: String) -> Unit) {
         val cleanId = toMagicId.trim().uppercase()
 
-        // Validate format
-        if (!cleanId.matches(Regex("M-\\d{4}"))) {
-            onResult(false, "Invalid Magic ID format. Must be like M-1234")
+        // Validate format: accept both "MC-XXXXXX" (new) and "M-XXXX" (legacy)
+        if (!cleanId.matches(Regex("MC-[A-Z0-9]{6}")) && !cleanId.matches(Regex("M-\\d{4}"))) {
+            onResult(false, "Invalid Magic ID format. Should look like MC-A3B7KQ")
             return
         }
         if (cleanId == myMagicId) {

@@ -25,11 +25,15 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Already logged in → run dynamic verification and skip login screen
+        // Already logged in — check for updates first, then restore premium, then go to main
         val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
         if (AuthManager.isLoggedIn && user != null) {
-            com.magic.calculator.logic.PremiumManager.verifySessionSubscription(this, user.uid) { _ ->
-                goToMain()
+            com.magic.calculator.logic.AppUpdateChecker.checkForUpdate(this) {
+                // No update needed (or error) — proceed with premium restore
+                com.magic.calculator.logic.SubscriptionManager.ensureUserDocumentCreated()
+                com.magic.calculator.logic.SubscriptionManager.syncAndRestorePremiumStatus(this) { _, _ ->
+                    goToMain(premiumRestored = true)
+                }
             }
             return
         }
@@ -44,11 +48,63 @@ class LoginActivity : AppCompatActivity() {
             val signInIntent = googleSignInClient.signInIntent
             startActivityForResult(signInIntent, RC_GOOGLE_SIGN_IN)
         }
+
+        binding.btnEmailLogin.setOnClickListener {
+            handleEmailLogin()
+        }
+
+        binding.tvLoginLink.setOnClickListener {
+            startActivity(Intent(this, SignupActivity::class.java))
+            finish()
+        }
+    }
+
+    private fun handleEmailLogin() {
+        val email = binding.etEmail.text?.toString()?.trim() ?: ""
+        val password = binding.etPassword.text?.toString() ?: ""
+
+        binding.tvError.visibility = View.GONE
+
+        if (email.isEmpty()) {
+            showError("Please enter your email.")
+            return
+        }
+        if (password.length < 6) {
+            showError("Password must be at least 6 characters.")
+            return
+        }
+
+        showLoading(true)
+        lifecycleScope.launch {
+            val result = AuthManager.loginWithEmail(email, password)
+            result.fold(
+                onSuccess = {
+                    val loggedInUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                    if (loggedInUser != null) {
+                        // Check for updates first, then restore premium
+                        com.magic.calculator.logic.AppUpdateChecker.checkForUpdate(this@LoginActivity) {
+                            com.magic.calculator.logic.SubscriptionManager.ensureUserDocumentCreated()
+                            com.magic.calculator.logic.SubscriptionManager.syncAndRestorePremiumStatus(this@LoginActivity) { _, _ ->
+                                showLoading(false)
+                                goToMain(premiumRestored = true)
+                            }
+                        }
+                    } else {
+                        showLoading(false)
+                        showError("Login succeeded but user data is unavailable.")
+                    }
+                },
+                onFailure = {
+                    showLoading(false)
+                    showError(it.message ?: "Login failed. Please try again.")
+                }
+            )
+        }
     }
 
     private fun setupGoogleSignIn() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("503275768638-o9rh63phatafpkodtm7rvvhkua7eilur.apps.googleusercontent.com")
+            .requestIdToken(com.magic.calculator.BuildConfig.GOOGLE_OAUTH_CLIENT_ID)
             .requestEmail()
             .build()
         googleSignInClient = GoogleSignIn.getClient(this, gso)
@@ -73,13 +129,17 @@ class LoginActivity : AppCompatActivity() {
                         onSuccess = {
                             val loggedInUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
                             if (loggedInUser != null) {
-                                com.magic.calculator.logic.PremiumManager.verifySessionSubscription(this@LoginActivity, loggedInUser.uid) { _ ->
-                                    showLoading(false)
-                                    goToMain()
+                                // Check for updates first, then restore premium
+                                com.magic.calculator.logic.AppUpdateChecker.checkForUpdate(this@LoginActivity) {
+                                    com.magic.calculator.logic.SubscriptionManager.ensureUserDocumentCreated()
+                                    com.magic.calculator.logic.SubscriptionManager.syncAndRestorePremiumStatus(this@LoginActivity) { _, _ ->
+                                        showLoading(false)
+                                        goToMain(premiumRestored = true)
+                                    }
                                 }
                             } else {
                                 showLoading(false)
-                                goToMain()
+                                goToMain(premiumRestored = false)
                             }
                         },
                         onFailure = { 
@@ -95,15 +155,21 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun goToMain() {
-        startActivity(Intent(this, MainActivity::class.java))
+    private fun goToMain(premiumRestored: Boolean = false) {
+        val intent = Intent(this, MainActivity::class.java)
+        intent.putExtra("premium_already_restored", premiumRestored)
+        startActivity(intent)
         finish()
     }
 
     private fun showLoading(show: Boolean) {
         binding.progressBar.visibility = if (show) View.VISIBLE else View.GONE
         binding.btnGoogleSignIn.isEnabled = !show
+        binding.btnEmailLogin.isEnabled = !show
+        binding.etEmail.isEnabled = !show
+        binding.etPassword.isEnabled = !show
         binding.btnGoogleSignIn.alpha = if (show) 0.6f else 1.0f
+        binding.btnEmailLogin.alpha = if (show) 0.6f else 1.0f
     }
 
     private fun showError(message: String) {

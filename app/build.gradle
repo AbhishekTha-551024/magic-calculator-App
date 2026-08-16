@@ -1,26 +1,41 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    id 'com.google.gms.google-services' // ← Firebase plugin (NEW)
+    id 'com.google.gms.google-services'
 }
 
 android {
     namespace 'com.magic.calculator'
-    compileSdk 34
+    compileSdk 35
+    buildToolsVersion "34.0.0"
 
     defaultConfig {
         applicationId "com.magic.calculator"
         minSdk 23
-        targetSdk 34
+        targetSdk 35
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // ── Razorpay Key via BuildConfig (NOT hardcoded in source) ──────────
+        // For production: replace the value below with your LIVE key (rzp_live_...)
+        // For test mode:  use rzp_test_TIrQcKSVEIqIDj
+        // NEVER commit your live key to source control.
+        buildConfigField "String", "RAZORPAY_KEY_ID", "\"rzp_test_TIrQcKSVEIqIDj\""
+
+        // ── Google OAuth Client ID via BuildConfig ───────────────────────────
+        buildConfigField "String", "GOOGLE_OAUTH_CLIENT_ID", "\"503275768638-o9rh63phatafpkodtm7rvvhkua7eilur.apps.googleusercontent.com\""
     }
 
     buildTypes {
-        release {
+        debug {
             minifyEnabled false
+            shrinkResources false
+        }
+        release {
+            minifyEnabled true          // ← ENABLED — protects app logic from decompilation
+            shrinkResources true        // ← ENABLED — removes unused resources
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -33,48 +48,62 @@ android {
     }
     buildFeatures {
         viewBinding true
+        buildConfig true  // ← Required for BuildConfig fields above
     }
 }
 
 dependencies {
+    // ── AndroidX Core (kept at last known-working versions) ──────────────────
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
-    // Google Play Billing
-    implementation 'com.android.billingclient:billing-ktx:6.2.1'
-
-    // Activity KTX
+    // ── Activity & Fragment ───────────────────────────────────────────────────
     implementation 'androidx.activity:activity-ktx:1.8.2'
     implementation 'androidx.fragment:fragment-ktx:1.6.2'
 
-    // Lifecycle & ViewModel
+    // ── Lifecycle & ViewModel ─────────────────────────────────────────────────
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0'
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.7.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
 
-    // Coroutines
+    // ── Kotlin Coroutines ─────────────────────────────────────────────────────
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3'
 
-    // PhotoView
+    // ── Razorpay Checkout SDK ─────────────────────────────────────────────────
+    implementation 'com.razorpay:checkout:1.6.41'
+
+    // ── OkHttp ────────────────────────────────────────────────────────────────
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+    // ── PhotoView ─────────────────────────────────────────────────────────────
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 
-    // ─── Firebase (NEW) ───────────────────────────────────────────────
-    // Firebase BoM — controls ALL firebase library versions automatically
-    implementation platform('com.google.firebase:firebase-bom:33.1.0')
+    // ── Firebase BoM — controls ALL Firebase library versions ─────────────────
+    implementation platform('com.google.firebase:firebase-bom:33.5.1')
 
     // Firebase Authentication
     implementation 'com.google.firebase:firebase-auth-ktx'
 
-    // Firebase Firestore (for syncing settings across devices)
+    // Firebase Cloud Functions
+    implementation 'com.google.firebase:firebase-functions-ktx'
+
+    // Firebase Firestore
     implementation 'com.google.firebase:firebase-firestore-ktx'
 
-    // Google Sign-In (for "Login with Google" button)
-    implementation 'com.google.android.gms:play-services-auth:21.2.0'
-    // ─────────────────────────────────────────────────────────────────
+    // Firebase Analytics
+    implementation 'com.google.firebase:firebase-analytics-ktx'
 
+    // Firebase App Check (Play Integrity for Release, Debug Provider for Testing)
+    implementation 'com.google.firebase:firebase-appcheck-playintegrity'
+    implementation 'com.google.firebase:firebase-appcheck-debug'
+
+    // ── Google Sign-In ────────────────────────────────────────────────────────
+    implementation 'com.google.android.gms:play-services-auth:21.2.0'
+
+    // ── Tests ─────────────────────────────────────────────────────────────────
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'

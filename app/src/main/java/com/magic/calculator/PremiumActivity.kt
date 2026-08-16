@@ -5,274 +5,276 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.android.billingclient.api.*
 import com.google.android.material.card.MaterialCardView
-import com.magic.calculator.logic.PremiumManager
+import com.magic.calculator.logic.AuthManager
+import com.magic.calculator.logic.SubscriptionManager
+import com.magic.calculator.network.VercelRazorpayHelper
+import com.razorpay.Checkout
+import com.razorpay.PaymentData
+import com.razorpay.PaymentResultWithDataListener
+import org.json.JSONObject
 
-class PremiumActivity : AppCompatActivity() {
+/**
+ * PremiumActivity — 3-Tier Subscription Pricing:
+ * 1. Weekly   (₹99  / 7 Days)
+ * 2. Monthly  (₹199 / 30 Days)   ← DEFAULT / MOST POPULAR
+ * 3. Lifetime (₹299 / Unlimited) ← UNBEATABLE DEAL
+ */
+class PremiumActivity : AppCompatActivity(), PaymentResultWithDataListener {
 
-    private var selectedPlan = "YEARLY"
-    private lateinit var billingClient: BillingClient
-    private var productDetailsList: List<ProductDetails> = emptyList()
-
-    private val purchasesUpdatedListener = PurchasesUpdatedListener { billingResult, purchases ->
-        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
-            for (purchase in purchases) {
-                handlePurchase(purchase)
-            }
-        } else if (billingResult.responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
-            Toast.makeText(this, "Purchase canceled.", Toast.LENGTH_SHORT).show()
-            resetPurchaseButton()
-        } else {
-            Log.e("PremiumActivity", "Purchase failed: ${billingResult.debugMessage}")
-            Toast.makeText(this, "Purchase failed: ${billingResult.debugMessage}", Toast.LENGTH_SHORT).show()
-            resetPurchaseButton()
-        }
-    }
+    private var selectedPlan = "MONTHLY"
+    private var selectedAmountInINR = 199 // Default monthly amount
+    private var pendingOrderId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_premium)
 
         val btnClose = findViewById<ImageView>(R.id.btnClose)
-        val cardMonthly = findViewById<MaterialCardView>(R.id.cardMonthly)
+        val cardWeekly = findViewById<MaterialCardView>(R.id.cardWeekly)
         val cardYearly = findViewById<MaterialCardView>(R.id.cardYearly)
+        val cardLifetime = findViewById<MaterialCardView>(R.id.cardLifetime)
+        val tvRestorePurchases = findViewById<TextView>(R.id.tvRestorePurchases)
         val btnPurchase = findViewById<Button>(R.id.btnPurchase)
 
-        btnClose.setOnClickListener {
-            finish()
-        }
+        btnClose.setOnClickListener { finish() }
 
-        val btnTest7Day = findViewById<Button>(R.id.btnTest7Day)
-        val btnTestLifetime = findViewById<Button>(R.id.btnTestLifetime)
-
-        btnTest7Day.setOnClickListener {
-            btnTest7Day.isEnabled = false
-            Toast.makeText(this, "Simulating 7-Day Sandbox Subscription...", Toast.LENGTH_SHORT).show()
-            PremiumManager.updatePremiumFirestore(this, true, "MONTHLY") { success, msg ->
-                runOnUiThread {
-                    Toast.makeText(this@PremiumActivity, msg, Toast.LENGTH_LONG).show()
-                    if (success) finish() else btnTest7Day.isEnabled = true
-                }
-            }
-        }
-
-        btnTestLifetime.setOnClickListener {
-            btnTestLifetime.isEnabled = false
-            Toast.makeText(this, "Simulating Lifetime Sandbox License...", Toast.LENGTH_SHORT).show()
-            PremiumManager.updatePremiumFirestore(this, true, "lifetime") { success, msg ->
-                runOnUiThread {
-                    Toast.makeText(this@PremiumActivity, msg, Toast.LENGTH_LONG).show()
-                    if (success) finish() else btnTestLifetime.isEnabled = true
-                }
-            }
-        }
-
-        cardMonthly.setOnClickListener {
-            selectedPlan = "MONTHLY"
-            cardMonthly.setCardBackgroundColor(Color.parseColor("#1A00E5FF"))
-            cardMonthly.strokeWidth = 2
-            cardMonthly.strokeColor = Color.parseColor("#00E5FF")
-
-            cardYearly.setCardBackgroundColor(Color.parseColor("#222222"))
-            cardYearly.strokeWidth = 0
-
-            btnPurchase.text = "Continue with Monthly (₹99)"
+        // ── Plan Selectors ──────────────────────────────────────────────────
+        cardWeekly.setOnClickListener {
+            selectedPlan = "WEEKLY"
+            selectedAmountInINR = 99
+            highlightCard(cardWeekly, cardYearly, cardLifetime, "#00E5FF")
+            btnPurchase.text = "Get Weekly Pass for ₹99"
         }
 
         cardYearly.setOnClickListener {
-            selectedPlan = "YEARLY"
-            cardYearly.setCardBackgroundColor(Color.parseColor("#1A00E5FF"))
-            cardYearly.strokeWidth = 2
-            cardYearly.strokeColor = Color.parseColor("#00E5FF")
-
-            cardMonthly.setCardBackgroundColor(Color.parseColor("#222222"))
-            cardMonthly.strokeWidth = 0
-
-            btnPurchase.text = "Continue with Yearly (₹2000)"
+            selectedPlan = "MONTHLY"
+            selectedAmountInINR = 199
+            highlightCard(cardYearly, cardWeekly, cardLifetime, "#00E5FF")
+            btnPurchase.text = "Get Monthly Pass for ₹199"
         }
 
-        setupBillingClient()
+        cardLifetime.setOnClickListener {
+            selectedPlan = "LIFETIME"
+            selectedAmountInINR = 299
+            highlightCard(cardLifetime, cardWeekly, cardYearly, "#10B981")
+            btnPurchase.text = "Get Lifetime Access for ₹299"
+        }
+
+        // ── Task 3: Restore Purchases Logic ─────────────────────────────────
+        tvRestorePurchases.setOnClickListener {
+            tvRestorePurchases.isEnabled = false
+            Toast.makeText(this, "Restoring purchases from server...", Toast.LENGTH_SHORT).show()
+
+            SubscriptionManager.syncAndRestorePremiumStatus(this) { success, message ->
+                runOnUiThread {
+                    tvRestorePurchases.isEnabled = true
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                    if (success) {
+                        finish() // Return to dashboard upon successful restore
+                    }
+                }
+            }
+        }
+
+        // Razorpay recommends preloading checkout for faster launch
+        Checkout.preload(applicationContext)
 
         btnPurchase.setOnClickListener {
             btnPurchase.isEnabled = false
-            btnPurchase.text = "Processing..."
+            btnPurchase.text = "Creating order..."
+            startPurchaseFlow()
+        }
+    }
 
-            val productId = if (selectedPlan == "YEARLY") "yearly_2000" else "monthly_99"
-            val productDetails = productDetailsList.find { it.productId == productId }
+    private fun highlightCard(
+        activeCard: MaterialCardView,
+        card2: MaterialCardView,
+        card3: MaterialCardView,
+        strokeHexColor: String
+    ) {
+        val colorInt = Color.parseColor(strokeHexColor)
+        val bgAlphaColor = Color.parseColor(if (strokeHexColor == "#10B981") "#1A10B981" else "#1A00E5FF")
 
-            if (productDetails != null) {
-                val subscriptionOfferDetails = productDetails.subscriptionOfferDetails
-                val offerToken = subscriptionOfferDetails?.firstOrNull()?.offerToken ?: ""
+        activeCard.setCardBackgroundColor(bgAlphaColor)
+        activeCard.strokeWidth = 4
+        activeCard.strokeColor = colorInt
 
-                val productDetailsParamsList = listOf(
-                    BillingFlowParams.ProductDetailsParams.newBuilder()
-                        .setProductDetails(productDetails)
-                        .setOfferToken(offerToken)
-                        .build()
-                )
+        card2.setCardBackgroundColor(Color.parseColor("#1A1A1E"))
+        card2.strokeWidth = 2
+        card2.strokeColor = Color.parseColor("#333333")
 
-                val billingFlowParams = BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(productDetailsParamsList)
-                    .build()
+        card3.setCardBackgroundColor(Color.parseColor("#1A1A1E"))
+        card3.strokeWidth = 2
+        card3.strokeColor = Color.parseColor("#333333")
+    }
 
-                billingClient.launchBillingFlow(this, billingFlowParams)
-            } else {
-                // Developer / Simulator fallback mode
-                Log.d("PremiumActivity", "BillingClient not ready. Falling back to simulated Google Play Checkout.")
-                showSimulatedPlayBillingDialog()
+    /**
+     * Step 1: Call Vercel Backend /api/create-order to get Razorpay Order ID.
+     */
+    private fun startPurchaseFlow() {
+        VercelRazorpayHelper.createOrder(selectedAmountInINR) { success, orderId, error ->
+            runOnUiThread {
+                if (!success || orderId == null) {
+                    Toast.makeText(this, error ?: "Could not generate payment order.", Toast.LENGTH_LONG).show()
+                    resetPurchaseButton()
+                    return@runOnUiThread
+                }
+
+                pendingOrderId = orderId
+                openRazorpayCheckout(orderId, selectedAmountInINR)
             }
         }
     }
 
-    private fun showSimulatedPlayBillingDialog() {
-        val bottomSheetDialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
-        bottomSheetDialog.setContentView(R.layout.dialog_google_play_billing)
-        bottomSheetDialog.setCancelable(false)
+    /**
+     * Step 2: Open Razorpay Payment Sheet with generated orderId.
+     */
+    private fun openRazorpayCheckout(orderId: String, amountInINR: Int) {
+        val checkout = Checkout()
+        checkout.setKeyID(VercelRazorpayHelper.RAZORPAY_KEY_ID)
+        checkout.setImage(R.drawable.ic_magic)
 
-        val tvGoogleAccountEmail = bottomSheetDialog.findViewById<android.widget.TextView>(R.id.tvGoogleAccountEmail)
-        val tvBillingDetails = bottomSheetDialog.findViewById<android.widget.TextView>(R.id.tvBillingDetails)
-        val tvBillingPrice = bottomSheetDialog.findViewById<android.widget.TextView>(R.id.tvBillingPrice)
-        val layoutProcessing = bottomSheetDialog.findViewById<android.view.View>(R.id.layoutProcessing)
-        val layoutActions = bottomSheetDialog.findViewById<android.view.View>(R.id.layoutActions)
-        val btnCancelBilling = bottomSheetDialog.findViewById<android.widget.Button>(R.id.btnCancelBilling)
-        val btnSubscribeBilling = bottomSheetDialog.findViewById<android.widget.Button>(R.id.btnSubscribeBilling)
-
-        // Bind data
-        val email = com.magic.calculator.logic.AuthManager.currentUser?.email ?: "tester@magicapp.com"
-        tvGoogleAccountEmail?.text = email
-
-        if (selectedPlan == "YEARLY") {
-            tvBillingDetails?.text = "Yearly Subscription"
-            tvBillingPrice?.text = "₹2,000.00"
-        } else {
-            tvBillingDetails?.text = "Monthly Subscription"
-            tvBillingPrice?.text = "₹99.00"
+        val planLabel = when (selectedPlan) {
+            "WEEKLY"   -> "Weekly Pass (₹99)"
+            "MONTHLY"  -> "Monthly Pass (₹199)"
+            "LIFETIME" -> "Lifetime Access (₹299)"
+            else       -> "Monthly Pass (₹199)"
         }
 
-        btnCancelBilling?.setOnClickListener {
-            bottomSheetDialog.dismiss()
-            Toast.makeText(this, "Purchase canceled.", Toast.LENGTH_SHORT).show()
+        try {
+            val options = JSONObject().apply {
+                put("name", "Magic Calculator Pro")
+                put("description", planLabel)
+                put("order_id", orderId)
+                put("currency", "INR")
+                put("amount", amountInINR * 100) // Amount in paise
+                put("theme.color", if (selectedPlan == "LIFETIME") "#10B981" else "#00E5FF")
+
+                val prefill = JSONObject()
+                AuthManager.currentUser?.email?.let { prefill.put("email", it) }
+                put("prefill", prefill)
+            }
+
+            checkout.open(this, options)
+        } catch (e: Exception) {
+            Log.e("PremiumActivity", "Error launching Razorpay Checkout", e)
+            Toast.makeText(this, "Could not open payment sheet.", Toast.LENGTH_LONG).show()
             resetPurchaseButton()
         }
+    }
 
-        btnSubscribeBilling?.setOnClickListener {
-            // Show processing simulation
-            layoutActions?.visibility = android.view.View.GONE
-            layoutProcessing?.visibility = android.view.View.VISIBLE
-
-            // Perform the Firestore transaction and listen for the explicit callback
-            PremiumManager.updatePremiumFirestore(this, true, selectedPlan) { success, msg ->
-                runOnUiThread {
-                    // Instantly hide the progress bar and dismiss the bottom sheet
-                    layoutProcessing?.visibility = android.view.View.GONE
-                    bottomSheetDialog.dismiss()
-                    
-                    Toast.makeText(this@PremiumActivity, msg, Toast.LENGTH_LONG).show()
-                    if (success) {
-                        // Success! Unlock Advanced Features instantly by finishing the Paywall
-                        finish()
-                    } else {
-                        resetPurchaseButton()
-                    }
-                }
-            }
+    /**
+     * Step 3: Callback on Payment Success - Razorpay confirmed payment.
+     * CRITICAL FIX: Write to Firestore IMMEDIATELY when Razorpay confirms.
+     * DO NOT wait for backend verification — Razorpay has already collected the money.
+     */
+    override fun onPaymentSuccess(razorpayPaymentId: String?, paymentData: PaymentData?) {
+        if (razorpayPaymentId.isNullOrEmpty()) {
+            Toast.makeText(this, "Payment ID missing. Contact support.", Toast.LENGTH_LONG).show()
+            resetPurchaseButton()
+            return
         }
 
-        bottomSheetDialog.show()
-    }
+        val orderId = paymentData?.orderId ?: pendingOrderId ?: ""
+        val signature = paymentData?.signature ?: ""
 
-    private fun setupBillingClient() {
-        billingClient = BillingClient.newBuilder(this)
-            .setListener(purchasesUpdatedListener)
-            .enablePendingPurchases()
-            .build()
+        val (planName, durationDays) = when (selectedPlan) {
+            "WEEKLY"   -> "Weekly Pass (₹99)" to 7
+            "MONTHLY"  -> "Monthly Pass (₹199)" to 30
+            "LIFETIME" -> "Lifetime License (₹299)" to 36500
+            else       -> "Monthly Pass (₹199)" to 30
+        }
 
-        billingClient.startConnection(object : BillingClientStateListener {
-            override fun onBillingSetupFinished(billingResult: BillingResult) {
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    queryProductDetails()
-                } else {
-                    Log.e("PremiumActivity", "Billing setup failed: ${billingResult.debugMessage}")
-                }
-            }
+        // ── STEP A: Capture user identity RIGHT NOW before any async calls ──
+        val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        val userId = currentUser?.uid
+        val userEmail = currentUser?.email ?: ""
 
-            override fun onBillingServiceDisconnected() {
-                Log.d("PremiumActivity", "Billing service disconnected. Reconnecting...")
-            }
-        })
-    }
+        Log.d("PremiumActivity", "onPaymentSuccess: paymentId=$razorpayPaymentId plan=$planName userId=$userId email=$userEmail")
 
-    private fun queryProductDetails() {
-        val productList = listOf(
-            QueryProductDetailsParams.Product.newBuilder()
-                .setProductId("monthly_99")
-                .setProductType(BillingClient.ProductType.SUBS)
-                .build(),
-            QueryProductDetailsParams.Product.newBuilder()
-                .setProductId("yearly_2000")
-                .setProductType(BillingClient.ProductType.SUBS)
-                .build()
+        if (userId.isNullOrEmpty()) {
+            // Edge case: Auth state lost — still save locally and write with direct call
+            Log.e("PremiumActivity", "CRITICAL: currentUser is NULL during payment success! Cannot write to Firestore.")
+            SubscriptionManager.saveSubscription(this, planName, razorpayPaymentId, durationDays)
+            Toast.makeText(this, "✅ Payment done! Please restart app to activate.", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
+        // ── STEP B: Write to Firestore DIRECTLY with explicit userId ──
+        // We use the userId captured above — not relying on FirebaseAuth later.
+        val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        val paymentData2 = hashMapOf(
+            "isPremium"     to true,
+            "isProUser"     to true,
+            "planType"      to planName,
+            "transactionId" to razorpayPaymentId,
+            "paymentId"     to razorpayPaymentId,
+            "activatedAt"   to System.currentTimeMillis(),
+            "lastSyncedAt"  to System.currentTimeMillis(),
+            "lastSeen"      to System.currentTimeMillis(),
+            "email"         to userEmail
         )
 
-        val params = QueryProductDetailsParams.newBuilder()
-            .setProductList(productList)
-            .build()
-
-        billingClient.queryProductDetailsAsync(params) { billingResult, productDetailsList ->
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                this.productDetailsList = productDetailsList
-                Log.d("PremiumActivity", "Product details queried: ${productDetailsList.size} found.")
-            } else {
-                Log.e("PremiumActivity", "Query product details failed: ${billingResult.debugMessage}")
+        db.collection("users").document(userId)
+            .set(paymentData2, com.google.firebase.firestore.SetOptions.merge())
+            .addOnSuccessListener {
+                Log.d("PremiumActivity", "✅ Firestore write SUCCESS for userId=$userId plan=$planName tx=$razorpayPaymentId")
             }
-        }
-    }
+            .addOnFailureListener { e ->
+                Log.e("PremiumActivity", "❌ Firestore write FAILED for userId=$userId: ${e.message}", e)
+            }
 
-    private fun handlePurchase(purchase: Purchase) {
-        if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-            if (!purchase.isAcknowledged) {
-                val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
-                    .setPurchaseToken(purchase.purchaseToken)
-                    .build()
-                billingClient.acknowledgePurchase(acknowledgePurchaseParams) { billingResult ->
-                    if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                        val planType = if (purchase.products.contains("yearly_2000")) "YEARLY" else "MONTHLY"
-                        PremiumManager.updatePremiumFirestore(this, true, planType) { success, msg ->
-                            runOnUiThread {
-                                Toast.makeText(this@PremiumActivity, msg, Toast.LENGTH_LONG).show()
-                                if (success) {
-                                    finish()
-                                } else {
-                                    resetPurchaseButton()
-                                }
-                            }
-                        }
+        // Save locally too
+        SubscriptionManager.saveSubscription(this, planName, razorpayPaymentId, durationDays)
+
+        // Show success to user immediately
+        Toast.makeText(this, "✅ Payment Successful! Pro features unlocked.", Toast.LENGTH_LONG).show()
+
+        // ── STEP C: Backend verification in background (audit trail only) ──
+        if (orderId.isNotEmpty() && signature.isNotEmpty()) {
+            com.magic.calculator.network.VercelRazorpayHelper.verifyPayment(orderId, razorpayPaymentId, signature) { success, message ->
+                runOnUiThread {
+                    if (success) {
+                        Log.d("PremiumActivity", "Backend verification confirmed: $message")
                     } else {
-                        runOnUiThread {
-                            Toast.makeText(this@PremiumActivity, "Acknowledgment failed: ${billingResult.debugMessage}", Toast.LENGTH_LONG).show()
-                            resetPurchaseButton()
-                        }
+                        Log.w("PremiumActivity", "Backend verify: $message (Firestore already written)")
                     }
                 }
             }
+        }
+
+        finish()
+    }
+
+
+    /**
+     * Step 4: Callback on Payment Error or User Cancellation
+     */
+    override fun onPaymentError(code: Int, description: String?, paymentData: PaymentData?) {
+        runOnUiThread {
+            val message = if (code == Checkout.PAYMENT_CANCELED) {
+                "Payment canceled by user."
+            } else {
+                "Payment failed: ${description ?: "Unknown error"}"
+            }
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+            resetPurchaseButton()
         }
     }
 
     private fun resetPurchaseButton() {
         val btnPurchase = findViewById<Button>(R.id.btnPurchase)
-        runOnUiThread {
-            btnPurchase.isEnabled = true
-            btnPurchase.text = if (selectedPlan == "YEARLY") "Continue with Yearly (₹2000)" else "Continue with Monthly (₹99)"
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        if (::billingClient.isInitialized) {
-            billingClient.endConnection()
+        btnPurchase.isEnabled = true
+        btnPurchase.text = when (selectedPlan) {
+            "WEEKLY"   -> "Get Weekly Pass for ₹99"
+            "MONTHLY"  -> "Get Monthly Pass for ₹199"
+            "LIFETIME" -> "Get Lifetime Access for ₹299"
+            else       -> "Get Monthly Pass for ₹199"
         }
     }
 }
