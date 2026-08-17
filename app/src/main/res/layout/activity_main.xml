@@ -119,4 +119,80 @@
         android:clipChildren="false"
         android:clipToPadding="false" />
 
+    <!-- Magician Guided Coach HUD Banner -->
+    <include
+        android:id="@+id/layoutCoach"
+        layout="@layout/layout_coach_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Floating Arrow Pointer Container -->
+    <LinearLayout
+        android:id="@+id/layoutCoachPointer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:elevation="20dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <TextView
+            android:id="@+id/tvPointerBubble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_tooltip_bubble"
+            android:text="Tap 7"
+            android:textColor="#00E5FF"
+            android:textStyle="bold"
+            android:textSize="13sp" />
+
+        <ImageView
+            android:id="@+id/imgPointerArrow"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_arrow_downward"
+            app:tint="#00E5FF" />
+    </LinearLayout>
+    <!-- Persistent Hint Banner: shown after skipping basic tour until 741= is done -->
+    <LinearLayout
+        android:id="@+id/layoutUnlockHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="#CC0A0A14"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="10dp"
+        android:elevation="16dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🔐 Type  7 → 4 → 1 → =  to unlock the Backstage!"
+            android:textColor="#00E5FF"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/btnDismissUnlockHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✕"
+            android:textColor="#88FFFFFF"
+            android:textSize="16sp"
+            android:padding="8dp" />
+
+    </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

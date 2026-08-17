@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardBackgroundColor="#181824"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Top Header: Badge & Skip -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <!-- Step Badge -->
+            <LinearLayout
+                android:id="@+id/layoutTourBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@drawable/bg_magic_gradient"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/tvTourBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MAGICIAN TOUR • 1 / 4"
+                    android:textColor="#FFFFFF"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/btnTourSkip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:text="Skip"
+                android:textColor="#88FFFFFF"
+                android:textSize="13sp"
+                android:padding="4dp" />
+        </RelativeLayout>
+
+        <!-- Hero Icon Emblem with Glow -->
+        <FrameLayout
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginVertical="12dp">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_glow_radial"
+                android:alpha="0.6" />
+
+            <ImageView
+                android:id="@+id/imgTourHeroIcon"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_magic"
+                app:tint="#00E5FF" />
+        </FrameLayout>
+
+        <!-- Step Title -->
+        <TextView
+            android:id="@+id/tvTourTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="The Invisible Disguise"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Step Description -->
+        <TextView
+            android:id="@+id/tvTourDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="To any spectator, this app appears as a completely innocent standard calculator that accurately computes everyday math."
+            android:textColor="#B0B0C4"
+            android:textSize="13sp"
+            android:lineSpacingMultiplier="1.25"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Interactive Simulation Container -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardTourInteractiveBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="#0DFFFFFF"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            android:layout_marginBottom="20dp">
+
+            <LinearLayout
+                android:id="@+id/layoutTourInteractiveContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/tvTourHintHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💡 PRO TIP &amp; LIVE GESTURE"
+                    android:textColor="#00E5FF"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1"
+                    android:layout_marginBottom="6dp" />
+
+                <TextView
+                    android:id="@+id/tvTourHintBody"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Type your 3-digit Secret PIN (Default 741) and press '=' to access backstage switchboard!"
+                    android:textColor="#E0E0E0"
+                    android:textSize="12sp"
+                    android:gravity="center" />
+
+                <!-- Actionable Try Button inside preview -->
+                <Button
+                    android:id="@+id/btnTourTryAction"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginTop="10dp"
+                    android:text="✨ Tap To Simulate"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#00E5FF"
+                    android:textStyle="bold"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Dots Indicator -->
+        <LinearLayout
+            android:id="@+id/layoutTourDots"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Bottom Actions (Previous & Next/Finish) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <Button
+                android:id="@+id/btnTourPrevious"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Back"
+                android:textAllCaps="false"
+                android:textColor="#88FFFFFF"
+                android:backgroundTint="#1AFFFFFF"
+                android:textStyle="bold"
+                app:cornerRadius="14dp"
+                android:visibility="invisible"
+                android:layout_marginEnd="10dp" />
+
+            <Button
+                android:id="@+id/btnTourNext"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="2"
+                android:text="Next Step →"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#00E5FF"
+                android:textStyle="bold"
+                app:cornerRadius="14dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

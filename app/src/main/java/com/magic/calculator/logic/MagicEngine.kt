@@ -1,25 +1,27 @@
 package com.magic.calculator.logic
 
+import com.magic.calculator.logic.strategies.MagicExecutionContext
+import com.magic.calculator.logic.strategies.MagicRegistry
 import java.util.Calendar
 
 /**
- * The Brain  the Magic Calculator.
- * Identifies and performs magical transformations numbers.
+ * The Brain of the Magic Calculator.
+ * Identifies and performs magical transformations on numbers using [MagicRegistry] strategies.
  */
-class MagicEngine {
+class MagicEngine(private val registry: MagicRegistry = MagicRegistry.getInstance()) {
 
     enum class TrickType {
-        INVERSION,    // 6666 → 9999
-        PALINDROME,   // 12321 stays, with mirror visual
-        DIGIT_FLIP,   // custom trigger → custom result
-        LUCKY,        // Any → forced lucky number
-        BIRTHDAY,     // Birth year → age
-        MIRROR,       // 1234 → 4321
+        INVERSION,          // 6666 → 9999
+        PALINDROME,         // 12321 stays, with mirror visual
+        DIGIT_FLIP,         // custom trigger → custom result
+        LUCKY,              // Any → forced lucky number
+        BIRTHDAY,           // Birth year → age
+        MIRROR,             // 1234 → 4321
         PHONE_NUMBER_FORCE, // 10 digits → forced phone number
-        TOXIC_TIME,   // current time/date/battery
-        GHOST_TYPING, // numbers type themselves
+        TOXIC_TIME,         // current time/date/battery
+        GHOST_TYPING,       // numbers type themselves
         REAPPEARING_RESULT, // deleted numbers come back
-        STEP_REVEAL,  // reveal digits one-by-one with sensors
+        STEP_REVEAL,        // reveal digits one-by-one with sensors
         NONE
     }
 
@@ -61,79 +63,47 @@ class MagicEngine {
         flipResult: String = "699"
     ): TrickResult {
         val cleaned = input.trim()
+
+        val strategyKey = when (type) {
+            TrickType.DIGIT_FLIP -> "DIGIT_FLIP"
+            TrickType.LUCKY -> "LUCKY"
+            TrickType.PHONE_NUMBER_FORCE -> "PHONE_NUMBER_FORCE"
+            TrickType.TOXIC_TIME -> "TOXIC_TIME"
+            TrickType.GHOST_TYPING -> "GHOST_TYPING"
+            TrickType.REAPPEARING_RESULT -> "REAPPEARING_RESULT"
+            TrickType.STEP_REVEAL -> "STEP_REVEAL"
+            TrickType.INVERSION -> "INVERSION"
+            TrickType.BIRTHDAY -> "BIRTHDAY"
+            TrickType.MIRROR -> "MIRROR"
+            else -> null
+        }
+
+        if (strategyKey != null) {
+            val context = MagicExecutionContext(
+                forcedPhoneNumber = forcedPhone,
+                forcedLuckyNumber = forcedLucky,
+                customFlipResult = flipResult,
+                toxicValue = forcedLucky
+            )
+            val res = registry.executeTrick(strategyKey, cleaned, context)
+            if (res != null) {
+                return TrickResult(
+                    type = type,
+                    displayValue = res.displayValue,
+                    trickName = res.trickName,
+                    description = res.description
+                )
+            }
+        }
+
         return when (type) {
-            TrickType.INVERSION -> TrickResult(
-                type = type,
-                displayValue = cleaned.replace('6', '9'),
-                trickName = "Number Inversion",
-                description = "6s have been flipped to 9s!"
-            )
-            TrickType.DIGIT_FLIP -> TrickResult(
-                type = type,
-                displayValue = flipResult,
-                trickName = "Digit Flip",
-                description = "Magic has flipped the digits!"
-            )
             TrickType.PALINDROME -> TrickResult(
                 type = type,
                 displayValue = cleaned,
                 trickName = "Palindrome Magic",
                 description = "This number reads the same forwards & backwards!"
             )
-            TrickType.LUCKY -> TrickResult(
-                type = type,
-                displayValue = forcedLucky,
-                trickName = "Lucky Number",
-                description = "The universe chose $forcedLucky for you!"
-            )
-            TrickType.BIRTHDAY -> {
-                val birthYear = cleaned.toIntOrNull() ?: 2000
-                val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-                val age = currentYear - birthYear
-                TrickResult(
-                    type = type,
-                    displayValue = age.toString(),
-                    trickName = "Birthday Magic",
-                    description = "Born in $birthYear? You are $age years old!"
-                )
-            }
-            TrickType.MIRROR -> TrickResult(
-                type = type,
-                displayValue = cleaned.reversed(),
-                trickName = "Mirror Reversal",
-                description = "Your number has been perfectly mirrored!"
-            )
-            TrickType.PHONE_NUMBER_FORCE -> TrickResult(
-                type = type,
-                displayValue = forcedPhone,
-                trickName = "Phone Magic",
-                description = "Magic has forced your number!"
-            )
-            TrickType.TOXIC_TIME -> TrickResult(
-                type = type,
-                displayValue = forcedLucky, // reuse forcedLucky parameter as the pre-calculated toxic value
-                trickName = "Toxic Force",
-                description = "The numbers aligned with reality!"
-            )
-            TrickType.GHOST_TYPING -> TrickResult(
-                type = type,
-                displayValue = cleaned, // ghost typing doesn't change the value instantly
-                trickName = "Ghost Typing",
-                description = "The spirits are typing..."
-            )
-            TrickType.REAPPEARING_RESULT -> TrickResult(
-                type = type,
-                displayValue = cleaned, // handled in ViewModel
-                trickName = "Ghost Recovery",
-                description = "The deleted numbers have returned!"
-            )
-            TrickType.STEP_REVEAL -> TrickResult(
-                type = type,
-                displayValue = cleaned, // handled in ViewModel step-by-step
-                trickName = "Step-by-Step Reveal",
-                description = "Each touch unveils a mystery..."
-            )
-            TrickType.NONE -> TrickResult(
+            else -> TrickResult(
                 type = type,
                 displayValue = cleaned,
                 trickName = "No Trick",

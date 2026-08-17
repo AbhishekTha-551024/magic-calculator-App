@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardCoachOverlay"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginTop="36dp"
+    app:cardBackgroundColor="#E612121E"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="10dp"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Top Header: Badge only -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_magic_gradient"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="3dp"
+            android:gravity="center"
+            android:layout_marginBottom="6dp">
+
+            <TextView
+                android:id="@+id/tvCoachBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✨ MAGICIAN COACH"
+                android:textColor="#FFFFFF"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1" />
+        </LinearLayout>
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/tvCoachTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Master Backdoor Entry"
+            android:textColor="#00E5FF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Instruction -->
+        <TextView
+            android:id="@+id/tvCoachInstruction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="👉 Tap number 7"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Skip Button — hidden to ensure full walkthrough completion -->
+        <TextView
+            android:id="@+id/btnCoachSkip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="Skip Tutorial"
+            android:textColor="#88FFFFFF"
+            android:textSize="13sp"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="8dp"
+            android:background="#22FFFFFF"
+            android:gravity="center"
+            android:visibility="gone" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+

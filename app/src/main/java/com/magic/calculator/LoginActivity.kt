@@ -81,9 +81,10 @@ class LoginActivity : AppCompatActivity() {
                 onSuccess = {
                     val loggedInUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
                     if (loggedInUser != null) {
-                        // Check for updates first, then restore premium
+                        // Check for updates first, then restore premium and onboarding state
                         com.magic.calculator.logic.AppUpdateChecker.checkForUpdate(this@LoginActivity) {
                             com.magic.calculator.logic.SubscriptionManager.ensureUserDocumentCreated()
+                            com.magic.calculator.logic.OnboardingManager.syncFromFirestore(this@LoginActivity)
                             com.magic.calculator.logic.SubscriptionManager.syncAndRestorePremiumStatus(this@LoginActivity) { _, _ ->
                                 showLoading(false)
                                 goToMain(premiumRestored = true)
@@ -129,9 +130,10 @@ class LoginActivity : AppCompatActivity() {
                         onSuccess = {
                             val loggedInUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
                             if (loggedInUser != null) {
-                                // Check for updates first, then restore premium
+                                // Check for updates first, then restore premium and onboarding state
                                 com.magic.calculator.logic.AppUpdateChecker.checkForUpdate(this@LoginActivity) {
                                     com.magic.calculator.logic.SubscriptionManager.ensureUserDocumentCreated()
+                                    com.magic.calculator.logic.OnboardingManager.syncFromFirestore(this@LoginActivity)
                                     com.magic.calculator.logic.SubscriptionManager.syncAndRestorePremiumStatus(this@LoginActivity) { _, _ ->
                                         showLoading(false)
                                         goToMain(premiumRestored = true)

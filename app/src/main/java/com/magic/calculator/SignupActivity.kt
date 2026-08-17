@@ -51,6 +51,8 @@ class SignupActivity : AppCompatActivity() {
                 onSuccess = {
                     val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
                     if (user != null) {
+                        com.magic.calculator.logic.SubscriptionManager.ensureUserDocumentCreated()
+                        com.magic.calculator.logic.OnboardingManager.resetOnboarding(this@SignupActivity, isPro = false)
                         PremiumManager.verifySessionSubscription(this@SignupActivity, user.uid) { _ ->
                             setLoading(false)
                             goToMain()

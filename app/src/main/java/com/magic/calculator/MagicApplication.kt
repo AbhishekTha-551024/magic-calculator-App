@@ -6,8 +6,14 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
+import com.magic.calculator.di.AppContainer
 
 class MagicApplication : Application() {
+
+    val appContainer: AppContainer by lazy {
+        AppContainer(this)
+    }
+
     override fun onCreate() {
         super.onCreate()
         FirebaseApp.initializeApp(this)

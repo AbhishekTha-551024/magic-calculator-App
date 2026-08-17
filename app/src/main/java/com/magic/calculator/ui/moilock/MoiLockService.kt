@@ -21,10 +21,15 @@ class MoiLockService : Service() {
         
         // Register the Screen Receiver dynamically
         screenReceiver = ScreenReceiver()
-        val filter = IntentFilter()
-        filter.addAction(Intent.ACTION_SCREEN_ON)
-        filter.addAction(Intent.ACTION_SCREEN_OFF)
-        registerReceiver(screenReceiver, filter)
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_SCREEN_OFF)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(screenReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(screenReceiver, filter)
+        }
         
         // Start Foreground to ensure it stays alive
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

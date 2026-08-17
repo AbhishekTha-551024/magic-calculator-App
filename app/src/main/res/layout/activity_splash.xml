@@ -34,7 +34,7 @@
         android:layout_width="120dp"
         android:layout_height="120dp"
         android:background="@drawable/bg_splash_emblem"
-        android:padding="24dp"
+        android:padding="20dp"
         app:layout_constraintBottom_toTopOf="@+id/tvAppTitle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -45,8 +45,7 @@
             android:id="@+id/ivMagicIcon"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:src="@drawable/ic_magic"
-            app:tint="#00E5FF" />
+            android:src="@drawable/ic_app_icon_calculator" />
     </FrameLayout>
 
     <!-- Main Title -->
@@ -55,31 +54,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:fontFamily="sans-serif-black"
-        android:letterSpacing="0.15"
-        android:text="MAGIC CALCULATOR"
-        android:textColor="#FFFFFF"
-        android:textSize="24sp"
-        app:layout_constraintBottom_toTopOf="@+id/tvSubtitle"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/cvEmblem" />
-
-    <!-- Subtitle / Tagline -->
-    <TextView
-        android:id="@+id/tvSubtitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
         android:fontFamily="sans-serif-medium"
         android:letterSpacing="0.08"
-        android:text="Mentalism &amp; Illusion Engine"
-        android:textColor="#88FFFFFF"
-        android:textSize="14sp"
+        android:text="Calculator"
+        android:textColor="#FFFFFF"
+        android:textSize="26sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvAppTitle" />
+        app:layout_constraintTop_toBottomOf="@+id/cvEmblem" />
 
     <!-- Bottom Status Layout -->
     <LinearLayout

@@ -62,9 +62,6 @@ class SplashActivity : AppCompatActivity() {
         binding.tvAppTitle.alpha = 0f
         binding.tvAppTitle.translationY = 40f
 
-        binding.tvSubtitle.alpha = 0f
-        binding.tvSubtitle.translationY = 30f
-
         binding.layoutBottomStatus.alpha = 0f
 
         // 1. Emblem Scale & Overshoot Pop-In
@@ -75,7 +72,7 @@ class SplashActivity : AppCompatActivity() {
             .setDuration(900L)
             .setInterpolator(OvershootInterpolator(1.6f))
             .withEndAction {
-                // Trigger Magical Particle Burst from emblem center
+                // Trigger subtle particle burst
                 val loc = IntArray(2)
                 binding.cvEmblem.getLocationOnScreen(loc)
                 val centerX = loc[0] + binding.cvEmblem.width / 2f
@@ -88,7 +85,7 @@ class SplashActivity : AppCompatActivity() {
             .start()
 
         // 2. Halo Breathing Glow Animation
-        val haloAnim = ObjectAnimator.ofFloat(binding.vGlowHalo, View.ALPHA, 0.2f, 0.6f, 0.2f).apply {
+        ObjectAnimator.ofFloat(binding.vGlowHalo, View.ALPHA, 0.2f, 0.6f, 0.2f).apply {
             duration = 1800L
             repeatCount = ValueAnimator.INFINITE
             start()
@@ -103,19 +100,10 @@ class SplashActivity : AppCompatActivity() {
             .setInterpolator(DecelerateInterpolator())
             .start()
 
-        // 4. Subtitle Slide Up & Fade In
-        binding.tvSubtitle.animate()
-            .alpha(1.0f)
-            .translationY(0f)
-            .setStartDelay(500L)
-            .setDuration(700L)
-            .setInterpolator(DecelerateInterpolator())
-            .start()
-
-        // 5. Status Loader Fade In
+        // 4. Status Loader Fade In
         binding.layoutBottomStatus.animate()
             .alpha(1.0f)
-            .setStartDelay(700L)
+            .setStartDelay(500L)
             .setDuration(500L)
             .start()
     }
@@ -131,8 +119,9 @@ class SplashActivity : AppCompatActivity() {
             if (isLoggedIn) {
                 binding.tvStatusMessage.text = "Checking for updates..."
                 AppUpdateChecker.checkForUpdate(this@SplashActivity) {
-                    binding.tvStatusMessage.text = "Syncing pro status..."
+                    binding.tvStatusMessage.text = "Syncing profile..."
                     SubscriptionManager.ensureUserDocumentCreated()
+                    com.magic.calculator.logic.OnboardingManager.syncFromFirestore(this@SplashActivity)
                     SubscriptionManager.syncAndRestorePremiumStatus(this@SplashActivity) { _, _ ->
                         lifecycleScope.launch {
                             val elapsed = System.currentTimeMillis() - startTime

@@ -201,9 +201,15 @@ object SubscriptionManager {
 
                     val hasValidPlan = planType.isNotEmpty() && !planType.equals("Free Tier", ignoreCase = true)
                     val hasValidTransaction = transactionId.isNotEmpty() && !transactionId.equals("N/A", ignoreCase = true)
+                    val expiryMillisFromDoc = snapshot.getLong("expiryMillis")
+                        ?: snapshot.getLong("premiumExpiryDate")
+                        ?: 0L
+
+                    val isLifetime = planType.contains("Lifetime", ignoreCase = true)
+                    val isExpired = !isLifetime && expiryMillisFromDoc > 0L && System.currentTimeMillis() > expiryMillisFromDoc
 
                     // Determine Premium Status logically
-                    val isUserPro = isPremiumBool || isProUserBool || hasValidPlan || hasValidTransaction
+                    val isUserPro = (isPremiumBool || isProUserBool || hasValidPlan || hasValidTransaction) && !isExpired
 
                     if (isUserPro) {
                         val activePlan = if (hasValidPlan) planType else "CalcMagic Pro"
@@ -222,11 +228,12 @@ object SubscriptionManager {
                         Log.d(TAG, "Premium status RESTORED from SERVER: plan=$activePlan, tx=$activeTx")
                         onComplete(true, "Purchase restored successfully! Active plan: $activePlan")
                     } else {
-                        // User has no valid premium entitlement on server
+                        // User has no valid or active premium entitlement on server (or subscription expired)
                         clearSubscription(context)
                         PremiumManager.setPremiumState(context, false)
-                        Log.d(TAG, "No active premium entitlement found on SERVER for user: ${user.uid}")
-                        onComplete(false, "No active subscription found for account: ${user.email}")
+                        val msg = if (isExpired) "Your previous subscription has expired." else "No active subscription found for account: ${user.email}"
+                        Log.d(TAG, "$msg for user: ${user.uid}")
+                        onComplete(false, msg)
                     }
                 } else {
                     clearSubscription(context)

@@ -4,6 +4,17 @@ plugins {
     id 'com.google.gms.google-services'
 }
 
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def razorpayKeyId = localProperties.getProperty('razorpay.key.id') ?:
+                    (project.findProperty('RAZORPAY_KEY_ID') ?: 'rzp_live_TQnRtItVZNaO2W')
+
 android {
     namespace 'com.magic.calculator'
     compileSdk 35
@@ -18,11 +29,8 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        // ── Razorpay Key via BuildConfig (NOT hardcoded in source) ──────────
-        // For production: replace the value below with your LIVE key (rzp_live_...)
-        // For test mode:  use rzp_test_TIrQcKSVEIqIDj
-        // NEVER commit your live key to source control.
-        buildConfigField "String", "RAZORPAY_KEY_ID", "\"rzp_test_TIrQcKSVEIqIDj\""
+        // ── Razorpay Key via local.properties / Project Property (NOT hardcoded) ──
+        buildConfigField "String", "RAZORPAY_KEY_ID", "\"${razorpayKeyId}\""
 
         // ── Google OAuth Client ID via BuildConfig ───────────────────────────
         buildConfigField "String", "GOOGLE_OAUTH_CLIENT_ID", "\"503275768638-o9rh63phatafpkodtm7rvvhkua7eilur.apps.googleusercontent.com\""

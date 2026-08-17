@@ -45,46 +45,34 @@ object PredictionFriendsOverlay {
             // ----------------------------------------------------
             // Name & Number Splitting Logic
             // ----------------------------------------------------
-            var nameLeft = ""
-            var nameRight = ""
             val cleanName = nameText.trim()
-            if (cleanName.contains(" ")) {
+            val (rawNameLeft, rawNameRight) = if (cleanName.contains(" ")) {
                 val parts = cleanName.split(" ")
-                nameLeft = parts[0]
-                nameRight = parts.subList(1, parts.size).joinToString(" ")
+                parts[0] to parts.subList(1, parts.size).joinToString(" ")
             } else {
                 val len = cleanName.length
                 if (len <= 3) {
-                    nameLeft = cleanName
-                    nameRight = ""
+                    cleanName to ""
                 } else {
                     val mid = len / 2
-                    nameLeft = cleanName.substring(0, mid)
-                    nameRight = cleanName.substring(mid)
+                    cleanName.substring(0, mid) to cleanName.substring(mid)
                 }
             }
+            val nameLeft = rawNameLeft.ifEmpty { "Left" }
+            val nameRight = rawNameRight.ifEmpty { "Right" }
 
-            var numLeft = ""
-            var numRight = ""
             val cleanNum = numberText.replace(" ", "").trim()
-            if (cleanNum.startsWith("+91") && cleanNum.length >= 13) {
-                numLeft = cleanNum.substring(0, 8) // E.g. +9189597
-                numRight = cleanNum.substring(8)   // E.g. 777541
+            val (numLeft, numRight) = if (cleanNum.startsWith("+91") && cleanNum.length >= 13) {
+                cleanNum.substring(0, 8) to cleanNum.substring(8) // E.g. +9189597 -> 777541
             } else {
                 val len = cleanNum.length
                 if (len <= 5) {
-                    numLeft = cleanNum
-                    numRight = ""
+                    cleanNum to ""
                 } else {
                     val mid = len / 2
-                    numLeft = cleanNum.substring(0, mid)
-                    numRight = cleanNum.substring(mid)
+                    cleanNum.substring(0, mid) to cleanNum.substring(mid)
                 }
             }
-
-            // Fallback defaults
-            if (nameLeft.isEmpty()) nameLeft = "Left"
-            if (nameRight.isEmpty()) nameRight = "Right"
 
             // ----------------------------------------------------
             // Paint Setup

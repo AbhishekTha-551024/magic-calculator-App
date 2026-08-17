@@ -24,6 +24,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.magic.calculator.databinding.ActivitySecretBinding
+import com.magic.calculator.di.appContainer
 import com.magic.calculator.logic.PinManager
 import com.magic.calculator.logic.PremiumManager
 import com.magic.calculator.logic.SettingsManager
@@ -34,15 +35,13 @@ import java.io.FileOutputStream
 import kotlin.math.sqrt
 
 /**
- * SecretActivity
- *
- * Streamlined secret configuration switchboard and sensor testing lab.
+ * Secret Backdoor Switchboard & Sensor Hardware Lab.
  * Dialog management is delegated to [SecretDialogHelper].
  */
 class SecretActivity : AppCompatActivity(), SensorEventListener {
 
     private lateinit var binding: ActivitySecretBinding
-    private lateinit var settingsManager: SettingsManager
+    private val settingsManager: SettingsManager by lazy { appContainer.settingsManager }
     private lateinit var sensorManager: SensorManager
 
     private val sensorViews = mutableMapOf<String, TextView>()
@@ -62,7 +61,6 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         binding = ActivitySecretBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        settingsManager = SettingsManager(this)
         if (settingsManager.appMode == 3 || settingsManager.appMode == 2) {
             settingsManager.appMode = 0
         }
@@ -83,6 +81,219 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         super.onResume()
         checkPermissionsWarningState()
         applySubscriptionState()
+
+        val coachCard = binding.layoutSecretCoach.cardCoachOverlay
+        val tvTitle = binding.layoutSecretCoach.tvCoachTitle
+        val tvInstruction = binding.layoutSecretCoach.tvCoachInstruction
+        val btnSkip = binding.layoutSecretCoach.btnCoachSkip
+        btnSkip.visibility = View.GONE
+        btnSkip.setOnClickListener {
+            com.magic.calculator.logic.InteractiveCoachManager.skipTraining(this)
+            coachCard.visibility = View.GONE
+        }
+
+        com.magic.calculator.logic.InteractiveCoachManager.currentStep.observe(this) { step ->
+            if (step == com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.OFF ||
+                step == com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.TRAINING_COMPLETED ||
+                step == com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_8_PERFORM_66 ||
+                step == com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_9_PERFORM_EQUAL ||
+                step == com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_10_PERFORM_WAVE) {
+                coachCard.visibility = View.GONE
+                hideSecretPointer()
+                setSecretLockState(null)
+            } else {
+                coachCard.visibility = View.VISIBLE
+                tvTitle.text = step.title
+                tvInstruction.text = step.instruction
+
+                when (step) {
+                    com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_5_CONFIG_FLIP -> {
+                        setSecretLockState(binding.cardFlip)
+                        binding.cardFlip.animate().scaleX(1.04f).scaleY(1.04f).setDuration(300).start()
+                        showSecretPointerAbove(binding.swFlip, "👇 Turn ON Digital Flip")
+                        binding.tabMagic.smoothScrollTo(0, 0)
+                    }
+                    com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_6_CONFIG_PROXIMITY -> {
+                        setSecretLockState(binding.swTrigProximity)
+                        binding.cardFlip.animate().scaleX(1.0f).scaleY(1.0f).setDuration(200).start()
+                        binding.swTrigProximity.animate().scaleX(1.08f).scaleY(1.08f).setDuration(300).start()
+                        showSecretPointerAbove(binding.swTrigProximity, "👇 Turn ON Proximity Wave")
+                        binding.tabMagic.post {
+                            binding.tabMagic.smoothScrollTo(0, binding.swTrigProximity.top)
+                        }
+                    }
+                    com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_6B_OPEN_EDIT_TAB -> {
+                        binding.swTrigProximity.animate().scaleX(1.0f).scaleY(1.0f).setDuration(200).start()
+                        setSecretLockState(binding.btnEditParams)
+                        binding.btnEditParams.animate().scaleX(1.25f).scaleY(1.25f).setDuration(300).start()
+                        showSecretPointerBelow(binding.btnEditParams, "👇 Tap Edit")
+                    }
+                    com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_6C_SAVE_FLIP_PARAMS -> {
+                        binding.btnEditParams.animate().scaleX(1.0f).scaleY(1.0f).setDuration(200).start()
+                        setSecretLockState(binding.btnSaveFlip)
+                        binding.btnSaveFlip.animate().scaleX(1.06f).scaleY(1.06f).setDuration(300).start()
+                        showSecretPointerAbove(binding.btnSaveFlip, "👇 Tap Save Flip (66 -> 99)")
+                        binding.tabEdit.post {
+                            binding.tabEdit.smoothScrollTo(0, binding.btnSaveFlip.top)
+                        }
+                    }
+                    com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_7_TAP_BACK -> {
+                        binding.btnSaveFlip.animate().scaleX(1.0f).scaleY(1.0f).setDuration(200).start()
+                        val navBackView = binding.bottomNav.findViewById<View>(R.id.nav_back)
+                        if (navBackView != null) {
+                            setSecretLockState(navBackView)
+                            navBackView.animate()?.scaleX(1.2f)?.scaleY(1.2f)?.setDuration(400)?.start()
+                            showSecretPointerAbove(navBackView, "👇 Tap Back to Perform!")
+                        }
+                    }
+                    else -> {
+                        setSecretLockState(null)
+                        hideSecretPointer()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun setSecretLockState(activeTarget: View?) {
+        val magicCards = listOf(
+            binding.cardFlip, binding.cardLucky, binding.cardPhone,
+            findViewById<View>(R.id.cardContactForceSetting),
+            findViewById<View>(R.id.cardP2PLinkSetting),
+            findViewById<View>(R.id.cardToxicGallerySetting),
+            findViewById<View>(R.id.cardStepRevealSetting),
+            findViewById<View>(R.id.cardMoiLockSetting),
+            findViewById<View>(R.id.cardExplosionSetting),
+            findViewById<View>(R.id.cardToxicSetting),
+            findViewById<View>(R.id.cardGhostSetting),
+            findViewById<View>(R.id.cardRecoverySetting)
+        ).filterNotNull()
+
+        val sensorSwitches = listOf(
+            binding.swTrigProximity, binding.swTrigLight, binding.swTrigMagnetic,
+            binding.swTrigShake, binding.swTrigTilt, binding.swTrigFaceDown,
+            binding.swTrigGyro, binding.swTrigVolUp, binding.swTrigVolDown,
+            binding.swTrigClap, binding.swTrigFingerprint, binding.swTrigRotate5
+        )
+
+        if (activeTarget == null) {
+            magicCards.forEach { card ->
+                card.isEnabled = true
+                card.alpha = 1.0f
+            }
+            binding.swFlip.isEnabled = true
+            binding.swLucky.isEnabled = true
+            binding.swPhone.isEnabled = true
+            sensorSwitches.forEach { sw ->
+                sw.isEnabled = true
+                sw.alpha = 1.0f
+            }
+            binding.btnEditParams.isEnabled = true
+            binding.btnEditParams.alpha = 1.0f
+            for (i in 0 until binding.bottomNav.menu.size()) {
+                binding.bottomNav.menu.getItem(i).isEnabled = true
+            }
+        } else {
+            magicCards.forEach { card ->
+                val isTarget = (card == activeTarget || card.findViewById<View>(activeTarget.id) != null)
+                card.isEnabled = isTarget
+                card.alpha = if (isTarget) 1.0f else 0.28f
+            }
+            binding.swFlip.isEnabled = (activeTarget == binding.swFlip || activeTarget == binding.cardFlip)
+            binding.swLucky.isEnabled = false
+            binding.swPhone.isEnabled = false
+
+            sensorSwitches.forEach { sw ->
+                val isTarget = (sw == activeTarget)
+                sw.isEnabled = isTarget
+                sw.alpha = if (isTarget) 1.0f else 0.28f
+            }
+
+            binding.btnEditParams.isEnabled = (activeTarget == binding.btnEditParams)
+            binding.btnEditParams.alpha = if (activeTarget == binding.btnEditParams) 1.0f else 0.28f
+
+            val isNavBackTarget = (activeTarget.id == R.id.nav_back)
+            for (i in 0 until binding.bottomNav.menu.size()) {
+                val item = binding.bottomNav.menu.getItem(i)
+                item.isEnabled = if (isNavBackTarget) item.itemId == R.id.nav_back else true
+            }
+        }
+    }
+
+    private fun showSecretPointerAbove(targetView: View, text: String) {
+        val pointerLayout = binding.layoutSecretCoachPointer
+        val tvBubble = binding.tvSecretPointerBubble
+        val imgArrow = binding.imgSecretPointerArrow
+
+        tvBubble.text = text
+        imgArrow.setImageResource(R.drawable.ic_arrow_downward)
+        pointerLayout.visibility = View.VISIBLE
+
+        targetView.post {
+            val locTarget = IntArray(2)
+            val locMain = IntArray(2)
+            targetView.getLocationOnScreen(locTarget)
+            binding.root.getLocationOnScreen(locMain)
+
+            pointerLayout.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+            val pointerW = pointerLayout.measuredWidth
+            val pointerH = pointerLayout.measuredHeight
+
+            val targetCenterX = (locTarget[0] - locMain[0]) + (targetView.width / 2f)
+            val targetTopY = (locTarget[1] - locMain[1]).toFloat()
+
+            pointerLayout.x = (targetCenterX - (pointerW / 2f)).coerceIn(16f, (binding.root.width - pointerW - 16).toFloat())
+            pointerLayout.y = targetTopY - pointerH - 8f
+
+            pointerLayout.clearAnimation()
+            val bobAnimation = android.view.animation.TranslateAnimation(0f, 0f, 0f, -20f).apply {
+                duration = 450
+                repeatMode = android.view.animation.Animation.REVERSE
+                repeatCount = android.view.animation.Animation.INFINITE
+                interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+            }
+            pointerLayout.startAnimation(bobAnimation)
+        }
+    }
+
+    private fun showSecretPointerBelow(targetView: View, text: String) {
+        val pointerLayout = binding.layoutSecretCoachPointer
+        val tvBubble = binding.tvSecretPointerBubble
+        val imgArrow = binding.imgSecretPointerArrow
+
+        tvBubble.text = text
+        imgArrow.setImageResource(R.drawable.ic_arrow_upward)
+        pointerLayout.visibility = View.VISIBLE
+
+        targetView.post {
+            val locTarget = IntArray(2)
+            val locMain = IntArray(2)
+            targetView.getLocationOnScreen(locTarget)
+            binding.root.getLocationOnScreen(locMain)
+
+            pointerLayout.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+            val pointerW = pointerLayout.measuredWidth
+
+            val targetCenterX = (locTarget[0] - locMain[0]) + (targetView.width / 2f)
+            val targetBottomY = (locTarget[1] - locMain[1]) + targetView.height.toFloat()
+
+            pointerLayout.x = (targetCenterX - (pointerW / 2f)).coerceIn(16f, (binding.root.width - pointerW - 16).toFloat())
+            pointerLayout.y = targetBottomY + 8f
+
+            pointerLayout.clearAnimation()
+            val bobAnimation = android.view.animation.TranslateAnimation(0f, 0f, 0f, 20f).apply {
+                duration = 450
+                repeatMode = android.view.animation.Animation.REVERSE
+                repeatCount = android.view.animation.Animation.INFINITE
+                interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+            }
+            pointerLayout.startAnimation(bobAnimation)
+        }
+    }
+
+    private fun hideSecretPointer() {
+        binding.layoutSecretCoachPointer.clearAnimation()
+        binding.layoutSecretCoachPointer.visibility = View.GONE
     }
 
     private fun initUI() {
@@ -139,6 +350,10 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         updateP2PIconStatus()
         updateStepRevealIconStatus()
         updateExplosionIconStatus()
+        updateContactForceIconStatus()
+        updateToxicTimeIconStatus()
+        updateGhostTypingIconStatus()
+        updateGhostRecoveryIconStatus()
 
         findViewById<View>(R.id.cardP2PLinkSetting)?.setOnClickListener {
             checkPremiumAndRun {
@@ -191,6 +406,39 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
             }
         }
 
+        findViewById<View>(R.id.cardToxicSetting)?.setOnClickListener {
+            checkPremiumAndRun {
+                SecretDialogHelper.showToxicTimeConfigDialog(
+                    activity = this,
+                    settingsManager = settingsManager,
+                    onActivateMagic = { key -> activateMagic(key) },
+                    onStatusChanged = { updateToxicTimeIconStatus() }
+                )
+            }
+        }
+
+        findViewById<View>(R.id.cardGhostSetting)?.setOnClickListener {
+            checkPremiumAndRun {
+                SecretDialogHelper.showGhostTypingConfigDialog(
+                    activity = this,
+                    settingsManager = settingsManager,
+                    onActivateMagic = { key -> activateMagic(key) },
+                    onStatusChanged = { updateGhostTypingIconStatus() }
+                )
+            }
+        }
+
+        findViewById<View>(R.id.cardRecoverySetting)?.setOnClickListener {
+            checkPremiumAndRun {
+                SecretDialogHelper.showGhostRecoveryConfigDialog(
+                    activity = this,
+                    settingsManager = settingsManager,
+                    onActivateMagic = { key -> activateMagic(key) },
+                    onStatusChanged = { updateGhostRecoveryIconStatus() }
+                )
+            }
+        }
+
         findViewById<View>(R.id.btnPhoneInfo)?.setOnClickListener {
             SecretDialogHelper.showContactForceGuideDialog(this, settingsManager) { key ->
                 activateMagic(key)
@@ -198,15 +446,6 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         }
 
         applyActiveMagicUI(settingsManager.activeMagic)
-
-        when (settingsManager.toxicMode) {
-            0 -> binding.rbToxicTime.isChecked = true
-            1 -> binding.rbToxicDate.isChecked = true
-            2 -> binding.rbToxicBattery.isChecked = true
-        }
-
-        binding.etGhostNumber.setText(settingsManager.ghostTypingNumber)
-        binding.etGhostDelay.setText(settingsManager.ghostTypingDelay.toString())
 
         val trig = settingsManager.activeSensorTrigger
         binding.swTrigMagnetic.isChecked = (trig == "MAGNETIC")
@@ -234,20 +473,31 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         setupSensorHelpListeners()
         updateAdvancedCardPremiumBadges()
         setupAppIconTab()
+        setupAppModeListener()
     }
 
     private fun setupAppModeListener() {
+        binding.rgAppMode.setOnCheckedChangeListener(null)
+        when (settingsManager.appMode) {
+            0 -> binding.rbMagicCalc.isChecked = true
+            1 -> if (PremiumManager.isUserPremium) binding.rbDialer.isChecked = true else binding.rbMagicCalc.isChecked = true
+            3 -> if (PremiumManager.isUserPremium) binding.rbGallery.isChecked = true else binding.rbMagicCalc.isChecked = true
+            else -> binding.rbMagicCalc.isChecked = true
+        }
+
         binding.rgAppMode.setOnCheckedChangeListener { _, checkedId ->
-            if (checkedId == binding.rbGallery.id && !PremiumManager.isUserPremium) {
+            if ((checkedId == binding.rbDialer.id || checkedId == binding.rbGallery.id) && !PremiumManager.isUserPremium) {
                 binding.rgAppMode.setOnCheckedChangeListener(null)
                 when (settingsManager.appMode) {
                     0 -> binding.rbMagicCalc.isChecked = true
-                    1 -> binding.rbDialer.isChecked = true
+                    1 -> if (PremiumManager.isUserPremium) binding.rbDialer.isChecked = true else binding.rbMagicCalc.isChecked = true
+                    3 -> if (PremiumManager.isUserPremium) binding.rbGallery.isChecked = true else binding.rbMagicCalc.isChecked = true
                     else -> binding.rbMagicCalc.isChecked = true
                 }
                 setupAppModeListener()
                 startActivity(Intent(this, PremiumActivity::class.java))
-                Toast.makeText(this, "Premium required for Gallery mode!", Toast.LENGTH_SHORT).show()
+                val modeName = if (checkedId == binding.rbDialer.id) "Phone Dialer mode" else "Gallery mode"
+                Toast.makeText(this, "Premium required for $modeName!", Toast.LENGTH_SHORT).show()
                 return@setOnCheckedChangeListener
             }
 
@@ -278,10 +528,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         val allSwitches = listOf(
             binding.swFlip to "DIGIT_FLIP",
             binding.swLucky to "LUCKY",
-            binding.swPhone to "PHONE_NUMBER_FORCE",
-            binding.swToxic to "TOXIC_TIME",
-            binding.swGhost to "GHOST_TYPING",
-            binding.swRecovery to "REAPPEARING_RESULT"
+            binding.swPhone to "PHONE_NUMBER_FORCE"
         )
         for ((sw, magicId) in allSwitches) {
             if (sw.isChecked != (magicId == key)) {
@@ -309,6 +556,9 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         updateStepRevealIconStatus()
         updateExplosionIconStatus()
         updateContactForceIconStatus()
+        updateToxicTimeIconStatus()
+        updateGhostTypingIconStatus()
+        updateGhostRecoveryIconStatus()
         updateSimpleMagicUIColors()
     }
 
@@ -316,10 +566,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         val allSwitches = listOf(
             binding.swFlip to "DIGIT_FLIP",
             binding.swLucky to "LUCKY",
-            binding.swPhone to "PHONE_NUMBER_FORCE",
-            binding.swToxic to "TOXIC_TIME",
-            binding.swGhost to "GHOST_TYPING",
-            binding.swRecovery to "REAPPEARING_RESULT"
+            binding.swPhone to "PHONE_NUMBER_FORCE"
         )
         for ((sw, magicId) in allSwitches) {
             sw.setOnCheckedChangeListener(null)
@@ -361,8 +608,12 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
 
     private fun setupMagicSwitches() {
         binding.swFlip.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) activateMagic("DIGIT_FLIP")
-            else if (settingsManager.activeMagic == "DIGIT_FLIP") activateMagic("NONE")
+            if (isChecked) {
+                activateMagic("DIGIT_FLIP")
+                com.magic.calculator.logic.InteractiveCoachManager.notifyFlipSwitched(true)
+            } else if (settingsManager.activeMagic == "DIGIT_FLIP") {
+                activateMagic("NONE")
+            }
         }
         binding.swLucky.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) activateMagic("LUCKY")
@@ -371,18 +622,6 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         binding.swPhone.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) activateMagic("PHONE_NUMBER_FORCE")
             else if (settingsManager.activeMagic == "PHONE_NUMBER_FORCE") activateMagic("NONE")
-        }
-        binding.swToxic.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) activateMagic("TOXIC_TIME")
-            else if (settingsManager.activeMagic == "TOXIC_TIME") activateMagic("NONE")
-        }
-        binding.swGhost.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) activateMagic("GHOST_TYPING")
-            else if (settingsManager.activeMagic == "GHOST_TYPING") activateMagic("NONE")
-        }
-        binding.swRecovery.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) activateMagic("REAPPEARING_RESULT")
-            else if (settingsManager.activeMagic == "REAPPEARING_RESULT") activateMagic("NONE")
         }
     }
 
@@ -406,6 +645,9 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
             sw.setOnCheckedChangeListener { _, isChecked ->
                 if (isChecked) {
                     updateSensorTrigger(type)
+                    if (type == "PROXIMITY") {
+                        com.magic.calculator.logic.InteractiveCoachManager.notifyProximitySwitched(true)
+                    }
                 } else if (settingsManager.activeSensorTrigger == type) {
                     updateSensorTrigger("NONE")
                 }
@@ -437,13 +679,24 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                 this,
                 "Digital Flip",
                 listOf(
-                    "1. Configure your Trigger (e.g. 666) and Result (e.g. 999) under the 'Edit Parameters' tab.",
-                    "2. During performance, enter your Trigger number (666) on the main calculator dialer.",
+                    "1. Configure your Trigger (e.g. 66) and Result (e.g. 99) under the 'Edit Parameters' tab.",
+                    "2. During performance, enter your Trigger number (66) on the main calculator dialer.",
                     "3. Press the '=' key to show it normally.",
                     "4. Perform your selected sensor trigger secretly (e.g., Wave hand over screen or Tilt phone).",
-                    "5. The display will magically flip and instantly update into your forced Result (999)!"
+                    "5. The display will magically flip and instantly update into your forced Result (99)!"
                 ),
-                "#00E5FF"
+                "#00E5FF",
+                onPracticeClick = {
+                    settingsManager.activeMagic = "DIGITAL_FLIP"
+                    settingsManager.activeSensorTrigger = "PROXIMITY"
+                    saveSystemSettings()
+                    com.magic.calculator.logic.InteractiveCoachManager.startDigitalFlipPractice()
+                    val intent = Intent(this, MainActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    }
+                    startActivity(intent)
+                    finish()
+                }
             )
         }
         binding.cardLucky.setOnClickListener {
@@ -451,9 +704,9 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                 this,
                 "Lucky Number Force",
                 listOf(
-                    "1. Type '777' on the main calculator dialer to open the quick-select Lucky Number screen.",
-                    "2. Quickly force any number 1-6 in any order using key shortcuts:\n   - 1: Proximity Wave\n   - 2: Face Down\n   - 3: Volume UP\n   - 4: Volume DOWN\n   - 5: Light Shadow\n   - 6: Shake Phone",
-                    "3. Or configure a single persistent Lucky Number in 'Edit Parameters'.",
+                    "1. Type '777' on the main calculator dialer and press '=' to arm Lucky Force mode.",
+                    "2. Quickly force any number 1-6 using secret shortcuts:\n   - 1: Proximity Wave\n   - 2: Face Down\n   - 3: Volume UP\n   - 4: Volume DOWN\n   - 5: Light Shadow\n   - 6: Shake Phone",
+                    "3. The spectator types any normal calculation (e.g., 5 + 5).",
                     "4. Pressing '=' on any equation will force the Lucky Number to be computed instead of the actual math!"
                 ),
                 "#FF2D55"
@@ -470,43 +723,6 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                     "4. You can then tap the secret call button to instantly dial the forced contact for an ultimate mind-reading finish!"
                 ),
                 "#00FF66"
-            )
-        }
-        binding.cardToxic.setOnClickListener {
-            SecretDialogHelper.showPerformanceGuideDialog(
-                this,
-                "Toxic Time Force",
-                listOf(
-                    "1. Go to 'Edit Parameters' and choose your active Toxic mode:\n   - Time Mode: Outputs the current clock time (e.g., 10:25).\n   - Date Mode: Outputs today's calendar date.\n   - Battery Mode: Outputs the exact battery percentage.",
-                    "2. Perform any mathematical calculation for the spectator.",
-                    "3. The moment '=' is pressed, the calculated result will magically match the system status (Time, Date, or Battery) exactly!"
-                ),
-                "#A855F7"
-            )
-        }
-        binding.cardGhost.setOnClickListener {
-            SecretDialogHelper.showPerformanceGuideDialog(
-                this,
-                "Ghost Typing Reveal",
-                listOf(
-                    "1. Configure your target Ghost Number sequence in 'Edit Parameters'.",
-                    "2. During performance, place your hand or finger near the proximity sensor or use any active trigger.",
-                    "3. After a brief custom delay, the calculator will magically begin typing the exact digits of your ghost number on the display by itself, letter-by-letter, as if a spirit is pressing the buttons!"
-                ),
-                "#FFCC00"
-            )
-        }
-        binding.cardRecovery.setOnClickListener {
-            SecretDialogHelper.showPerformanceGuideDialog(
-                this,
-                "Ghost Recovery",
-                listOf(
-                    "1. Complete a normal calculation in front of the spectator and press '=' to show the result.",
-                    "2. Press '=' again secretly to store the value in recovery.",
-                    "3. Clear the screen entirely or delete the digits one by one.",
-                    "4. Wave your hand over the proximity sensor (or activate your trigger) to magically make the vanished result reappear out of thin air!"
-                ),
-                "#FF9100"
             )
         }
     }
@@ -532,19 +748,13 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         val simpleMagics = listOf(
             Triple("DIGIT_FLIP", binding.imgFlipIconLeft, binding.txtFlipTitleLeft),
             Triple("LUCKY", binding.imgLuckyIconLeft, binding.txtLuckyTitleLeft),
-            Triple("PHONE_NUMBER_FORCE", binding.imgPhoneIconLeft, binding.txtPhoneTitleLeft),
-            Triple("TOXIC_TIME", binding.imgToxicIconLeft, binding.txtToxicTitleLeft),
-            Triple("GHOST_TYPING", binding.imgGhostIconLeft, binding.txtGhostTitleLeft),
-            Triple("REAPPEARING_RESULT", binding.imgRecoveryIconLeft, binding.txtRecoveryTitleLeft)
+            Triple("PHONE_NUMBER_FORCE", binding.imgPhoneIconLeft, binding.txtPhoneTitleLeft)
         )
 
         val activeColors = mapOf(
             "DIGIT_FLIP" to "#00E5FF",
             "LUCKY" to "#FF2D55",
-            "PHONE_NUMBER_FORCE" to "#00FF66",
-            "TOXIC_TIME" to "#A855F7",
-            "GHOST_TYPING" to "#FFCC00",
-            "REAPPEARING_RESULT" to "#FF9100"
+            "PHONE_NUMBER_FORCE" to "#00FF66"
         )
 
         for ((magicKey, img, txt) in simpleMagics) {
@@ -574,25 +784,18 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
             settingsManager.customFlipTrigger = binding.etFlipTrigger.text.toString()
             settingsManager.customFlipResult = binding.etFlipResult.text.toString()
             Toast.makeText(this, "Digital Flip Saved!", Toast.LENGTH_SHORT).show()
-        }
-        binding.btnSaveToxic.setOnClickListener {
-            val mode = when (binding.rgToxicMode.checkedRadioButtonId) {
-                R.id.rbToxicTime -> 0
-                R.id.rbToxicDate -> 1
-                R.id.rbToxicBattery -> 2
-                else -> 0
-            }
-            settingsManager.toxicMode = mode
-            Toast.makeText(this, "Toxic Mode Saved!", Toast.LENGTH_SHORT).show()
-        }
-        binding.btnSaveGhost.setOnClickListener {
-            settingsManager.ghostTypingNumber = binding.etGhostNumber.text.toString()
-            settingsManager.ghostTypingDelay = binding.etGhostDelay.text.toString().toIntOrNull() ?: 5
-            Toast.makeText(this, "Ghost Settings Saved!", Toast.LENGTH_SHORT).show()
+            com.magic.calculator.logic.InteractiveCoachManager.notifyFlipSaved()
         }
     }
 
     private fun setupNavigation() {
+        binding.btnEditParams.setOnClickListener {
+            hideAllTabs()
+            binding.tabEdit.visibility = View.VISIBLE
+            binding.tvTabTitle.text = "Edit Parameters"
+            com.magic.calculator.logic.InteractiveCoachManager.notifyEditTabOpened()
+        }
+
         binding.bottomNav.setOnItemSelectedListener { item ->
             hideAllTabs()
             when (item.itemId) {
@@ -610,9 +813,10 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                     binding.tvTabTitle.text = "Theme"
                 }
                 R.id.nav_back -> {
+                    com.magic.calculator.logic.InteractiveCoachManager.notifyBackToCalc()
                     saveSystemSettings()
                     val intent = Intent(this, MainActivity::class.java).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+                        addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                     }
                     startActivity(intent)
                     finish()
@@ -632,6 +836,11 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun selectAppIcon(iconType: com.magic.calculator.logic.AppIconManager.AppIconType) {
+        if (iconType != com.magic.calculator.logic.AppIconManager.AppIconType.CALCULATOR && !PremiumManager.isUserPremium) {
+            startActivity(Intent(this, PremiumActivity::class.java))
+            Toast.makeText(this, "Premium required to unlock ${iconType.title} disguise icon!", Toast.LENGTH_SHORT).show()
+            return
+        }
         val success = com.magic.calculator.logic.AppIconManager.setAppIcon(this, iconType)
         if (success) {
             Toast.makeText(this, "Launcher icon updated to ${iconType.title}!", Toast.LENGTH_SHORT).show()
@@ -1002,6 +1211,42 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         findViewById<TextView>(R.id.txtContactForceTitle)?.setTextColor(color)
     }
 
+    private fun updateToxicTimeIconStatus() {
+        val imgIcon = findViewById<android.widget.ImageView>(R.id.imgToxicSettingIconLeft) ?: return
+        val txtTitle = findViewById<TextView>(R.id.txtToxicSettingTitleLeft) ?: return
+        if (settingsManager.activeMagic == "TOXIC_TIME") {
+            imgIcon.setColorFilter(Color.parseColor("#A855F7"))
+            txtTitle.setTextColor(Color.parseColor("#A855F7"))
+        } else {
+            imgIcon.setColorFilter(Color.parseColor("#88FFFFFF"))
+            txtTitle.setTextColor(Color.parseColor("#88FFFFFF"))
+        }
+    }
+
+    private fun updateGhostTypingIconStatus() {
+        val imgIcon = findViewById<android.widget.ImageView>(R.id.imgGhostSettingIconLeft) ?: return
+        val txtTitle = findViewById<TextView>(R.id.txtGhostSettingTitleLeft) ?: return
+        if (settingsManager.activeMagic == "GHOST_TYPING") {
+            imgIcon.setColorFilter(Color.parseColor("#FFCC00"))
+            txtTitle.setTextColor(Color.parseColor("#FFCC00"))
+        } else {
+            imgIcon.setColorFilter(Color.parseColor("#88FFFFFF"))
+            txtTitle.setTextColor(Color.parseColor("#88FFFFFF"))
+        }
+    }
+
+    private fun updateGhostRecoveryIconStatus() {
+        val imgIcon = findViewById<android.widget.ImageView>(R.id.imgRecoverySettingIconLeft) ?: return
+        val txtTitle = findViewById<TextView>(R.id.txtRecoverySettingTitleLeft) ?: return
+        if (settingsManager.activeMagic == "REAPPEARING_RESULT") {
+            imgIcon.setColorFilter(Color.parseColor("#FF9100"))
+            txtTitle.setTextColor(Color.parseColor("#FF9100"))
+        } else {
+            imgIcon.setColorFilter(Color.parseColor("#88FFFFFF"))
+            txtTitle.setTextColor(Color.parseColor("#88FFFFFF"))
+        }
+    }
+
     private fun checkPermissionsWarningState() {
         val cardWarning = findViewById<androidx.cardview.widget.CardView>(R.id.cardPermissionWarning) ?: return
 
@@ -1074,13 +1319,32 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
             R.id.imgGalleryStatus,
             R.id.imgStepRevealStatus,
             R.id.imgMoiLockStatus,
-            R.id.imgExplosionStatus
+            R.id.imgExplosionStatus,
+            R.id.imgToxicStatus,
+            R.id.imgGhostStatus,
+            R.id.imgRecoveryStatus
         )
         for (id in statusIds) {
             val img = findViewById<android.widget.ImageView>(id) ?: continue
             img.setImageResource(iconRes)
             img.setColorFilter(Color.parseColor(tintColor))
         }
+
+        updatePremiumLockUI()
+    }
+
+    private fun updatePremiumLockUI() {
+        val isPremium = com.magic.calculator.logic.SubscriptionManager.isPremiumUser(this) || PremiumManager.isUserPremium
+
+        // 1. Theme Tab options: Remove 🔒 PRO when subscribed
+        binding.rbDialer.text = if (isPremium) "Phone Dialer (Stealth Mode)" else "Phone Dialer 🔒 PRO (Stealth Mode)"
+        binding.rbGallery.text = if (isPremium) "Gallery Theme (Prediction Mode)" else "Gallery Theme 🔒 PRO (Prediction Mode)"
+
+        // 2. App Icons Tab: Remove 🔒 PRO when subscribed
+        binding.txtIconCalendarTitle.text = if (isPremium) "Calendar" else "Calendar 🔒 PRO"
+        binding.txtIconNotesTitle.text = if (isPremium) "Notes" else "Notes 🔒 PRO"
+        binding.txtIconSettingsTitle.text = if (isPremium) "Settings" else "Settings 🔒 PRO"
+        binding.txtIconMessagesTitle.text = if (isPremium) "Messages" else "Messages 🔒 PRO"
     }
 
     private fun updateAdvancedCardPremiumBadges() {

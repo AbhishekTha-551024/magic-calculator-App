@@ -1,7 +1,5 @@
 package com.magic.calculator
 
-import android.Manifest
-import android.animation.ObjectAnimator
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -9,15 +7,12 @@ import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.CallLog
-import android.provider.ContactsContract
 import android.view.GestureDetector
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.animation.AccelerateDecelerateInterpolator
-import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -29,26 +24,23 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.magic.calculator.audio.SoundManager
-import com.magic.calculator.databinding.ActivityMainBinding
-import com.magic.calculator.haptic.HapticManager
 import com.magic.calculator.logic.AuthManager
+import com.magic.calculator.databinding.ActivityMainBinding
+import com.magic.calculator.di.appContainer
+import com.magic.calculator.haptic.HapticManager
+import com.magic.calculator.logic.InteractiveCoachManager
 import com.magic.calculator.logic.MagicEngine
+import com.magic.calculator.logic.OnboardingManager
 import com.magic.calculator.logic.PremiumManager
 import com.magic.calculator.logic.SettingsManager
 import com.magic.calculator.logic.SubscriptionManager
 import com.magic.calculator.p2p.P2PLinkManager
 import com.magic.calculator.sensor.SensorCoordinator
-import com.magic.calculator.ui.CallLogAdapter
-import com.magic.calculator.ui.CallLogEntry
-import com.magic.calculator.ui.ContactAdapter
-import com.magic.calculator.ui.ContactEntry
+import com.magic.calculator.ui.calculator.CalculatorKeypadController
+import com.magic.calculator.ui.dialer.DialerController
 import com.magic.calculator.ui.physics.PhysicsExplosionEngine
 import com.magic.calculator.viewmodel.MagicViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,29 +52,28 @@ import kotlin.math.abs
  * Primary calculator and dialer UI screen.
  * Hardware sensors are delegated to [SensorCoordinator].
  * Button scatter and tilt physics are delegated to [PhysicsExplosionEngine].
+ * Keypad clicks and dialer modes are delegated to modular controllers.
  */
 class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerCallback {
 
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MagicViewModel by viewModels()
 
-    private lateinit var settingsManager: SettingsManager
-    private lateinit var soundManager: SoundManager
-    private lateinit var hapticManager: HapticManager
+    private val settingsManager: SettingsManager by lazy { appContainer.settingsManager }
+    private val soundManager: SoundManager by lazy { appContainer.soundManager }
+    private val hapticManager: HapticManager by lazy { appContainer.hapticManager }
+    private val magicEngine: MagicEngine by lazy { appContainer.magicEngine }
+
     private lateinit var sensorCoordinator: SensorCoordinator
     private lateinit var physicsEngine: PhysicsExplosionEngine
+    private lateinit var dialerController: DialerController
+    private lateinit var keypadController: CalculatorKeypadController
 
-    private val magicEngine = MagicEngine()
     private val PERMISSION_REQUEST_CODE = 100
-    private var dialInput = ""
-    private var isMissedOnly = false
     private var lastDisplayLength = 0
     private var isRestoringOrTransitioning = false
-
-    // Lucky Magic Logic
     private var lastLuckyActionTime = 0L
     private val LUCKY_COOLDOWN = 300L
-
     private var equalClickCount = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,6 +92,12 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         setContentView(binding.root)
 
         initSystems()
+
+        if (settingsManager.appMode == 1) {
+            if (!PremiumManager.isUserPremium) {
+                settingsManager.appMode = 0
+            }
+        }
 
         if (settingsManager.appMode == 3) {
             if (!PremiumManager.isUserPremium) {
@@ -126,8 +123,7 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         }
 
         setupObservers()
-        setupClickListeners()
-        setupDialerListeners()
+        setupControllers()
 
         checkPermissions()
         runIntroSequence()
@@ -143,6 +139,19 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
                     runOnUiThread { applySubscriptionState() }
                 }
             }
+        }
+
+        OnboardingManager.syncFromFirestore(this) { _ ->
+            runOnUiThread {
+                if (OnboardingManager.shouldShowFreeOnboarding(this@MainActivity) &&
+                    !InteractiveCoachManager.isTrainingActive) {
+                    InteractiveCoachManager.startTraining()
+                }
+            }
+        }
+
+        if (OnboardingManager.shouldShowFreeOnboarding(this)) {
+            InteractiveCoachManager.startTraining()
         }
     }
 
@@ -164,13 +173,37 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
     }
 
     private fun initSystems() {
-        settingsManager = SettingsManager(this)
-        soundManager = SoundManager(this)
-        hapticManager = HapticManager(this)
         physicsEngine = PhysicsExplosionEngine(soundManager, hapticManager)
         sensorCoordinator = SensorCoordinator(this, settingsManager, lifecycleScope, this)
-
         setupP2PListener()
+    }
+
+    private fun setupControllers() {
+        dialerController = DialerController(
+            activity = this,
+            binding = binding.layoutDialer,
+            settingsManager = settingsManager,
+            soundManager = soundManager,
+            hapticManager = hapticManager,
+            magicEngine = magicEngine,
+            onLuckyTrigger = { startLuckyMagic() }
+        )
+        dialerController.init()
+
+        keypadController = CalculatorKeypadController(
+            binding = binding,
+            viewModel = viewModel,
+            soundManager = soundManager,
+            hapticManager = hapticManager,
+            physicsEngine = physicsEngine,
+            onEqualClicked = { handleEqualClick() },
+            onEqualLongClicked = { handleEqualLongClick() },
+            onPanicReset = { performPanicReset() },
+            onClearClicked = { handleClearClick() },
+            onBackspaceClicked = { handleBackspaceClick() }
+        )
+        keypadController.init()
+        setupSwipeToDelete()
     }
 
     private fun setupP2PListener() {
@@ -276,7 +309,7 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         if (settingsManager.activeSensorTrigger == "NONE") return
 
         val activeMagic = settingsManager.activeMagic
-        val isPremiumTrick = activeMagic in listOf("TOXIC_TIME", "GHOST_TYPING", "STEP_REVEAL", "CONTACT_FORCE", "TOXIC_GALLERY")
+        val isPremiumTrick = activeMagic in listOf("TOXIC_TIME", "GHOST_TYPING", "REAPPEARING_RESULT", "STEP_REVEAL", "CONTACT_FORCE", "TOXIC_GALLERY")
         val isSubscribed = SubscriptionManager.isPremiumUser(this) || PremiumManager.isUserPremium
         if (isPremiumTrick && !isSubscribed) {
             settingsManager.activeMagic = "NONE"
@@ -287,12 +320,12 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
 
         if (settingsManager.isDialerThemeActive) {
             if (activeMagic == "DIGIT_FLIP") {
-                if (dialInput == settingsManager.customFlipTrigger && !sensorCoordinator.flipAlreadyPerformed) {
+                if (dialerController.dialInput == settingsManager.customFlipTrigger && !sensorCoordinator.flipAlreadyPerformed) {
                     sensorCoordinator.flipAlreadyPerformed = true
-                    performDialerMagic(MagicEngine.TrickType.DIGIT_FLIP)
+                    dialerController.performDialerMagic(MagicEngine.TrickType.DIGIT_FLIP)
                 }
             } else if (activeMagic == "PHONE_NUMBER_FORCE") {
-                performDialerMagic(MagicEngine.TrickType.PHONE_NUMBER_FORCE)
+                dialerController.performDialerMagic(MagicEngine.TrickType.PHONE_NUMBER_FORCE)
             }
         } else {
             val currentDisplay = viewModel.displayText.value ?: ""
@@ -360,8 +393,23 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
                 sensorCoordinator.flipAlreadyPerformed = false
                 sensorCoordinator.resetFlipState()
             }
+
+            val currentStep = InteractiveCoachManager.currentStep.value
+            if (currentStep == InteractiveCoachManager.TrainingStep.STEP_1_TAP_7 && text.endsWith("7")) {
+                InteractiveCoachManager.notifyDigitPressed("7")
+            } else if (currentStep == InteractiveCoachManager.TrainingStep.STEP_2_TAP_4 && text.endsWith("4")) {
+                InteractiveCoachManager.notifyDigitPressed("4")
+            } else if (currentStep == InteractiveCoachManager.TrainingStep.STEP_3_TAP_1 && text.endsWith("1")) {
+                InteractiveCoachManager.notifyDigitPressed("1")
+            } else if (currentStep == InteractiveCoachManager.TrainingStep.STEP_8_PERFORM_66 && (text == "66" || text.endsWith("66"))) {
+                InteractiveCoachManager.setStep(InteractiveCoachManager.TrainingStep.STEP_9_PERFORM_EQUAL)
+            } else if (currentStep == InteractiveCoachManager.TrainingStep.STEP_10_PERFORM_WAVE && (text == "99" || text == result)) {
+                InteractiveCoachManager.notifyMagicFlipped(this)
+            }
         }
-        viewModel.formulaText.observe(this) { binding.tvFormula.text = it }
+        viewModel.formulaText.observe(this) { formula ->
+            binding.tvFormula.text = formula
+        }
         viewModel.secretUnlocked.observe(this) {
             if (it) startActivity(Intent(this, SecretActivity::class.java))
         }
@@ -377,116 +425,298 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
                 hapticManager.magicVibrate()
                 soundManager.playMagicSwoosh()
                 viewModel.onMagicConsumed()
+                if (trick == MagicEngine.TrickType.DIGIT_FLIP) {
+                    InteractiveCoachManager.notifyMagicFlipped(this)
+                }
+            }
+        }
+
+        InteractiveCoachManager.currentStep.observe(this) { step ->
+            updateCoachUI(step)
+        }
+    }
+
+    private var highlightedView: View? = null
+
+    private fun updateCoachUI(step: InteractiveCoachManager.TrainingStep) {
+        val coachCard = binding.layoutCoach.cardCoachOverlay
+        val tvTitle = binding.layoutCoach.tvCoachTitle
+        val tvInstruction = binding.layoutCoach.tvCoachInstruction
+        val btnSkip = binding.layoutCoach.btnCoachSkip
+        btnSkip.visibility = View.GONE
+        btnSkip.setOnClickListener {
+            // Mark as skipped by new user so hint banner shows
+            InteractiveCoachManager.skipTraining(this, newUserSkipped = true)
+            showUnlockHintBanner()
+        }
+
+        resetButtonHighlights()
+
+        if (step == InteractiveCoachManager.TrainingStep.OFF) {
+            coachCard.visibility = View.GONE
+            setKeypadButtonsLock(null)
+            return
+        }
+
+        coachCard.visibility = View.VISIBLE
+        tvTitle.text = step.title
+
+        when (step) {
+            InteractiveCoachManager.TrainingStep.STEP_1_TAP_7 -> {
+                setKeypadButtonsLock(binding.btn7)
+                highlightButton(binding.btn7)
+                showPointerAbove(binding.btn7, "👇 Tap 7")
+                tvInstruction.text = "👉 TAP THE HIGHLIGHTED BUTTON '7'"
+            }
+            InteractiveCoachManager.TrainingStep.STEP_2_TAP_4 -> {
+                setKeypadButtonsLock(binding.btn4)
+                highlightButton(binding.btn4)
+                showPointerAbove(binding.btn4, "👇 Tap 4")
+                tvInstruction.text = "👉 TAP THE HIGHLIGHTED BUTTON '4'"
+            }
+            InteractiveCoachManager.TrainingStep.STEP_3_TAP_1 -> {
+                setKeypadButtonsLock(binding.btn1)
+                highlightButton(binding.btn1)
+                showPointerAbove(binding.btn1, "👇 Tap 1")
+                tvInstruction.text = "👉 TAP THE HIGHLIGHTED BUTTON '1'"
+            }
+            InteractiveCoachManager.TrainingStep.STEP_4_TAP_EQUAL -> {
+                setKeypadButtonsLock(binding.btnEqual)
+                highlightButton(binding.btnEqual)
+                showPointerAbove(binding.btnEqual, "👇 Tap = to Unlock")
+                tvInstruction.text = "👉 TAP THE HIGHLIGHTED BUTTON '=' TO UNLOCK"
+            }
+            InteractiveCoachManager.TrainingStep.STEP_8_PERFORM_66 -> {
+                viewModel.onClearClick()
+                dialerController.setDialInput("0")
+                setKeypadButtonsLock(binding.btn6)
+                highlightButton(binding.btn6)
+                showPointerAbove(binding.btn6, "👇 Type 66")
+                tvInstruction.text = "👉 TYPE '66' ON THE KEYPAD"
+            }
+            InteractiveCoachManager.TrainingStep.STEP_9_PERFORM_EQUAL -> {
+                setKeypadButtonsLock(binding.btnEqual)
+                highlightButton(binding.btnEqual)
+                showPointerAbove(binding.btnEqual, "👇 Tap =")
+                tvInstruction.text = "👉 TAP '=' TO COMPUTE 66"
+            }
+            InteractiveCoachManager.TrainingStep.STEP_10_PERFORM_WAVE -> {
+                setKeypadButtonsLock(null)
+                hidePointer()
+                tvInstruction.text = "👉 WAVE YOUR HAND OVER TOP SENSOR TO FLIP 66 INTO 99!"
+            }
+            InteractiveCoachManager.TrainingStep.TRAINING_COMPLETED -> {
+                setKeypadButtonsLock(null)
+                hidePointer()
+                tvInstruction.text = "🎉 DIGITAL FLIP MASTERED! TRAINING COMPLETE!"
+                coachCard.postDelayed({
+                    InteractiveCoachManager.skipTraining(this)
+                }, 4000)
+            }
+            else -> {
+                setKeypadButtonsLock(null)
+                hidePointer()
+                tvInstruction.text = step.instruction
             }
         }
     }
 
-    private fun setupDialerListeners() {
-        val dialButtons = listOf(
-            binding.layoutDialer.dial0 to "0", binding.layoutDialer.dial1 to "1",
-            binding.layoutDialer.dial2 to "2", binding.layoutDialer.dial3 to "3",
-            binding.layoutDialer.dial4 to "4", binding.layoutDialer.dial5 to "5",
-            binding.layoutDialer.dial6 to "6", binding.layoutDialer.dial7 to "7",
-            binding.layoutDialer.dial8 to "8", binding.layoutDialer.dial9 to "9",
-            binding.layoutDialer.dialStar to "*", binding.layoutDialer.dialHash to "#"
+    private fun setKeypadButtonsLock(activeButton: View?) {
+        val allButtons = listOf(
+            binding.btn0, binding.btn1, binding.btn2, binding.btn3, binding.btn4,
+            binding.btn5, binding.btn6, binding.btn7, binding.btn8, binding.btn9,
+            binding.btnDot, binding.btnAdd, binding.btnSub, binding.btnMul,
+            binding.btnDiv, binding.btnEqual, binding.btnPercent, binding.btnC,
+            binding.btnBackspace, binding.btnPlusMinus
         )
 
-        dialButtons.forEach { (btn, value) ->
-            btn.setOnClickListener {
-                soundManager.playButtonTick()
+        if (activeButton == null) {
+            allButtons.forEach { btn ->
+                btn.isEnabled = true
+                btn.alpha = 1.0f
+            }
+        } else {
+            allButtons.forEach { btn ->
+                val isTarget = (btn == activeButton)
+                btn.isEnabled = isTarget
+                btn.alpha = if (isTarget) 1.0f else 0.28f
+            }
+        }
+    }
+
+    private var highlightedButton: android.widget.Button? = null
+    private var originalBgTint: android.content.res.ColorStateList? = null
+    private var originalTextColor: Int = Color.WHITE
+
+    private fun highlightButton(btn: android.widget.Button) {
+        resetButtonHighlights()
+
+        highlightedButton = btn
+        originalBgTint = btn.backgroundTintList
+        originalTextColor = btn.currentTextColor
+
+        // High contrast glowing neon cyan background with bold black text!
+        btn.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#00E5FF"))
+        btn.setTextColor(Color.parseColor("#000000"))
+        btn.setTypeface(btn.typeface, Typeface.BOLD)
+
+        // Continuous smooth pulsating scale animation
+        btn.animate()
+            .scaleX(1.22f)
+            .scaleY(1.22f)
+            .setDuration(600)
+            .setInterpolator(android.view.animation.CycleInterpolator(30f))
+            .start()
+    }
+
+    private fun showPointerAbove(targetView: View, text: String) {
+        val pointerLayout = binding.layoutCoachPointer
+        val tvBubble = binding.tvPointerBubble
+
+        tvBubble.text = text
+        pointerLayout.visibility = View.VISIBLE
+
+        targetView.post {
+            val locTarget = IntArray(2)
+            val locMain = IntArray(2)
+            targetView.getLocationOnScreen(locTarget)
+            binding.mainLayout.getLocationOnScreen(locMain)
+
+            pointerLayout.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+            val pointerW = pointerLayout.measuredWidth
+            val pointerH = pointerLayout.measuredHeight
+
+            val targetCenterX = (locTarget[0] - locMain[0]) + (targetView.width / 2f)
+            val targetTopY = (locTarget[1] - locMain[1]).toFloat()
+
+            pointerLayout.x = targetCenterX - (pointerW / 2f)
+            pointerLayout.y = targetTopY - pointerH - 8f
+
+            // Start continuous bobbing bounce animation
+            pointerLayout.clearAnimation()
+            val bobAnimation = android.view.animation.TranslateAnimation(0f, 0f, 0f, -20f).apply {
+                duration = 450
+                repeatMode = android.view.animation.Animation.REVERSE
+                repeatCount = android.view.animation.Animation.INFINITE
+                interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+            }
+            pointerLayout.startAnimation(bobAnimation)
+        }
+    }
+
+    private fun hidePointer() {
+        binding.layoutCoachPointer.clearAnimation()
+        binding.layoutCoachPointer.visibility = View.GONE
+    }
+
+    private fun resetButtonHighlights() {
+        hidePointer()
+        highlightedButton?.let { btn ->
+            btn.animate().cancel()
+            btn.scaleX = 1.0f
+            btn.scaleY = 1.0f
+            btn.backgroundTintList = originalBgTint ?: android.content.res.ColorStateList.valueOf(Color.parseColor("#2A2A38"))
+            btn.setTextColor(originalTextColor)
+        }
+        highlightedButton = null
+    }
+
+    private fun handleEqualClick() {
+        val calcDisplay = viewModel.displayText.value ?: ""
+        val currentStep = InteractiveCoachManager.currentStep.value
+
+        if (viewModel.checkSecretUnlock(settingsManager.secretUnlockCode)) {
+            soundManager.playMagicSwoosh()
+            hapticManager.magicVibrate()
+            viewModel.onClearClick()
+            dialerController.setDialInput("0")
+            // Hide the unlock hint banner — user has successfully unlocked backstage!
+            hideUnlockHintBanner()
+            if (currentStep == InteractiveCoachManager.TrainingStep.STEP_4_TAP_EQUAL) {
+                InteractiveCoachManager.notifyEqualPressed()
+            }
+            return
+        }
+
+        if (currentStep == InteractiveCoachManager.TrainingStep.STEP_9_PERFORM_EQUAL) {
+            InteractiveCoachManager.setStep(InteractiveCoachManager.TrainingStep.STEP_10_PERFORM_WAVE)
+        }
+
+        val activeMagic = settingsManager.activeMagic
+        if ((dialerController.dialInput == "777" || calcDisplay == "777") && activeMagic == "LUCKY") {
+            startLuckyMagic()
+            equalClickCount = 0
+        } else if (activeMagic == "TOXIC_TIME") {
+            val toxicValue = calculateToxicValue()
+            viewModel.onHardwareTrigger(toxicValue)
+            equalClickCount = 0
+        } else {
+            viewModel.onEqualClick(settingsManager.secretUnlockCode)
+            equalClickCount++
+            if (equalClickCount >= 2 && activeMagic == "REAPPEARING_RESULT") {
                 hapticManager.buttonTick()
-                if (sensorCoordinator.isLuckyActive && dialInput == "0") dialInput = ""
-                dialInput += value
-                binding.layoutDialer.tvDialNumber.text = dialInput
-            }
-            btn.setOnLongClickListener {
-                if (settingsManager.activeSensorTrigger == "FINGERPRINT") {
-                    triggerHardwareMagic(); true
-                } else false
             }
         }
-        binding.layoutDialer.btnDialBackspace.setOnClickListener {
-            if (dialInput.isNotEmpty()) {
-                dialInput = dialInput.dropLast(1)
-                binding.layoutDialer.tvDialNumber.text =
-                    if (dialInput.isEmpty() && sensorCoordinator.isLuckyActive) "0" else dialInput
-                soundManager.playButtonTick()
-                hapticManager.buttonTick()
-            }
-        }
-        binding.layoutDialer.btnDialBackspace.setOnLongClickListener {
-            if (sensorCoordinator.isLuckyActive) { exitLuckyMode(); true } else false
-        }
-        binding.layoutDialer.btnCall.setOnClickListener { handleCallAction() }
-        binding.layoutDialer.bottomNav.setOnItemSelectedListener { item ->
-            switchDialerTab(item.itemId); true
-        }
-        binding.layoutDialer.tabAll.setOnClickListener {
-            isMissedOnly = false; updateSubTabUI(); loadCallLogs()
-        }
-        binding.layoutDialer.tabMissed.setOnClickListener {
-            isMissedOnly = true; updateSubTabUI(); loadCallLogs()
-        }
-        binding.layoutDialer.fabAction.setOnClickListener {
-            binding.layoutDialer.dialPadOverlay.visibility = View.VISIBLE
-        }
-        binding.layoutDialer.vDimmer.setOnClickListener {
-            binding.layoutDialer.dialPadOverlay.visibility = View.GONE
-        }
-        binding.layoutDialer.btnDetailsBack.setOnClickListener {
-            binding.layoutDialer.layoutContactDetails.visibility = View.GONE
-        }
-        binding.layoutDialer.btnDetailsCall.setOnClickListener {
-            val phone = binding.layoutDialer.tvDetailsPhone.text.toString()
-            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
+        soundManager.playButtonTick()
+        hapticManager.buttonTick()
+    }
+
+    private fun handleEqualLongClick(): Boolean {
+        if (settingsManager.activeMagic == "TOXIC_GALLERY") {
+            hapticManager.magicVibrate()
+            soundManager.playMagicSwoosh()
+            settingsManager.appMode = 3
+            val intent = Intent(this, com.magic.calculator.ui.GalleryActivity::class.java)
             startActivity(intent)
-            binding.layoutDialer.layoutContactDetails.visibility = View.GONE
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            finish()
+            return true
         }
-        binding.layoutDialer.btnDetailsVideo.setOnClickListener {
-            openGalleryDirectly()
-        }
-        binding.layoutDialer.cvDetailsAvatar.setOnLongClickListener {
-            openGalleryDirectly()
-            true
-        }
-        binding.layoutDialer.ivMore.setOnClickListener { view ->
-            val popup = androidx.appcompat.widget.PopupMenu(this, view)
-            popup.menu.add(0, 1, 0, "☀️ Day Theme (Light)")
-            popup.menu.add(0, 2, 1, "🌙 Night Theme (Dark)")
-            popup.setOnMenuItemClickListener { menuItem ->
-                when (menuItem.itemId) {
-                    1 -> { settingsManager.isDialerThemeDark = false; applyDialerTheme() }
-                    2 -> { settingsManager.isDialerThemeDark = true; applyDialerTheme() }
-                }
-                true
-            }
-            popup.show()
-        }
+        return false
     }
 
-    private fun openGalleryDirectly() {
-        PremiumManager.enforceGatekeeper(
-            onUnlocked = {
-                if (settingsManager.isContactForceEnabled) {
-                    settingsManager.activeMagic = "CONTACT_FORCE"
-                }
-                val intent = Intent(this, com.magic.calculator.ui.GalleryActivity::class.java)
-                startActivity(intent)
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                finish()
-            },
-            onLocked = {
-                startActivity(Intent(this, PremiumActivity::class.java))
-                Toast.makeText(this, "Premium required for Gallery & Contact Force!", Toast.LENGTH_SHORT).show()
-            }
-        )
+    private fun handleClearClick() {
+        viewModel.onClearClick()
+        equalClickCount = 0
+        isRestoringOrTransitioning = false
+        if (sensorCoordinator.isLuckyActive) {
+            dialerController.setDialInput("0")
+            binding.tvDisplay.text = "0"
+            viewModel.forceDisplay("0")
+        }
+        soundManager.playButtonTick()
+        hapticManager.buttonTick()
+    }
+
+    private fun handleBackspaceClick() {
+        viewModel.onBackspaceClick()
+        if (sensorCoordinator.isLuckyActive) {
+            dialerController.setDialInput("0")
+            binding.tvDisplay.text = "0"
+            viewModel.forceDisplay("0")
+        }
+        soundManager.playButtonTick()
+        hapticManager.buttonTick()
+    }
+
+    private fun performPanicReset() {
+        settingsManager.activeMagic = "NONE"
+        settingsManager.isContactForceEnabled = false
+        settingsManager.isExplosionEnabled = false
+        viewModel.wipeMagicMemory()
+        dialerController.setDialInput("0")
+        equalClickCount = 0
+        if (sensorCoordinator.isLuckyActive) exitLuckyMode()
+        sensorCoordinator.resetFlipState()
+        sensorCoordinator.flipAlreadyPerformed = false
+        isRestoringOrTransitioning = false
+        hapticManager.magicVibrate()
     }
 
     private fun exitLuckyMode() {
         sensorCoordinator.isLuckyActive = false
-        dialInput = ""
+        dialerController.setDialInput("")
         runOnUiThread {
-            binding.layoutDialer.tvDialNumber.text = ""
             binding.tvDisplay.text = "0"
             viewModel.onClearClick()
             hapticManager.magicVibrate()
@@ -494,31 +724,10 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         }
     }
 
-    private fun handleCallAction() {
-        when (dialInput) {
-            "741" -> {
-                startActivity(Intent(this, SecretActivity::class.java))
-                dialInput = ""
-                binding.layoutDialer.tvDialNumber.text = ""
-                binding.layoutDialer.dialPadOverlay.visibility = View.GONE
-            }
-            settingsManager.customFlipTrigger -> performDialerMagic(MagicEngine.TrickType.DIGIT_FLIP)
-            "777" -> {
-                if (settingsManager.activeMagic == "LUCKY") startLuckyMagic()
-                else startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$dialInput")))
-            }
-            else -> {
-                if (dialInput.isNotEmpty())
-                    startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$dialInput")))
-            }
-        }
-    }
-
     private fun startLuckyMagic() {
         sensorCoordinator.isLuckyActive = true
-        dialInput = "0"
+        dialerController.setDialInput("0")
         runOnUiThread {
-            binding.layoutDialer.tvDialNumber.text = "0"
             binding.tvDisplay.text = "0"
             viewModel.forceDisplay("0")
             hapticManager.magicVibrate()
@@ -532,8 +741,7 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         lastLuckyActionTime = currentTime
         runOnUiThread {
             val valStr = value.toString()
-            dialInput = valStr
-            binding.layoutDialer.tvDialNumber.text = valStr
+            dialerController.setDialInput(valStr)
             binding.tvDisplay.text = valStr
             viewModel.forceDisplay(valStr)
             hapticManager.buttonTick()
@@ -541,26 +749,47 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         }
     }
 
-    private fun performDialerMagic(type: MagicEngine.TrickType) {
-        val result = magicEngine.performMagic(
-            input = dialInput,
-            type = type,
-            forcedPhone = settingsManager.forcedPhoneNumber,
-            forcedLucky = settingsManager.forcedLuckyNumber,
-            flipResult  = settingsManager.customFlipResult
-        )
-        val animator = ObjectAnimator.ofFloat(binding.layoutDialer.tvDialNumber, "rotationX", 0f, 360f)
-        animator.duration = 600
-        animator.interpolator = AccelerateDecelerateInterpolator()
-        animator.addUpdateListener {
-            if (animator.animatedFraction > 0.5f) {
-                binding.layoutDialer.tvDialNumber.text = result.displayValue
-                dialInput = result.displayValue
+    private fun calculateToxicValue(): String {
+        return when (settingsManager.toxicMode) {
+            0 -> SimpleDateFormat("HHmm", Locale.getDefault()).format(Date())
+            1 -> SimpleDateFormat("ddMM", Locale.getDefault()).format(Date())
+            2 -> {
+                val bm = getSystemService(BATTERY_SERVICE) as android.os.BatteryManager
+                bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY).toString()
             }
+            else -> "0"
         }
-        animator.start()
-        hapticManager.magicVibrate()
-        soundManager.playMagicSwoosh()
+    }
+
+    private fun triggerGhostReveal() {
+        val delay = settingsManager.ghostTypingDelay * 1000L
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            viewModel.onHardwareTrigger()
+            hapticManager.magicVibrate()
+            soundManager.playMagicSwoosh()
+        }, delay)
+    }
+
+    private fun checkPermissions() {
+        val perms = arrayOf(android.Manifest.permission.READ_CALL_LOG, android.Manifest.permission.READ_CONTACTS)
+        if (perms.any { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }) {
+            ActivityCompat.requestPermissions(this, perms, PERMISSION_REQUEST_CODE)
+        } else {
+            dialerController.loadCallLogs()
+            dialerController.loadContacts()
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            dialerController.loadCallLogs()
+            dialerController.loadContacts()
+        }
     }
 
     private fun applyTheme() {
@@ -594,8 +823,6 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
 
         binding.layoutDialer.ivSelect.setColorFilter(primaryColor)
         binding.layoutDialer.ivMore.setColorFilter(primaryColor)
-
-        updateSubTabUI()
 
         val tintList = android.content.res.ColorStateList.valueOf(secondaryColor)
         binding.layoutDialer.bottomNav.itemIconTintList = tintList
@@ -662,211 +889,6 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.isAppearanceLightStatusBars = !isDark
         controller.isAppearanceLightNavigationBars = !isDark
-
-        binding.layoutDialer.rvCallLog.adapter?.notifyDataSetChanged()
-        binding.layoutDialer.rvContacts.adapter?.notifyDataSetChanged()
-    }
-
-    private fun calculateToxicValue(): String {
-        return when (settingsManager.toxicMode) {
-            0 -> SimpleDateFormat("HHmm", Locale.getDefault()).format(Date())
-            1 -> SimpleDateFormat("ddMM", Locale.getDefault()).format(Date())
-            2 -> {
-                val bm = getSystemService(BATTERY_SERVICE) as android.os.BatteryManager
-                bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY).toString()
-            }
-            else -> "0"
-        }
-    }
-
-    private fun triggerGhostReveal() {
-        val delay = settingsManager.ghostTypingDelay * 1000L
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            viewModel.onHardwareTrigger()
-            hapticManager.magicVibrate()
-            soundManager.playMagicSwoosh()
-        }, delay)
-    }
-
-    private fun checkPermissions() {
-        val perms = arrayOf(Manifest.permission.READ_CALL_LOG, Manifest.permission.READ_CONTACTS)
-        if (perms.any { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }) {
-            ActivityCompat.requestPermissions(this, perms, PERMISSION_REQUEST_CODE)
-        } else {
-            loadCallLogs()
-            loadContacts()
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            loadCallLogs()
-            loadContacts()
-        }
-    }
-
-    private fun loadCallLogs() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val list = mutableListOf<CallLogEntry>()
-            try {
-                val cursor = contentResolver.query(
-                    CallLog.Calls.CONTENT_URI, null, null, null, CallLog.Calls.DATE + " DESC")
-                val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-                cursor?.use {
-                    val numIdx  = it.getColumnIndex(CallLog.Calls.NUMBER)
-                    val nameIdx = it.getColumnIndex(CallLog.Calls.CACHED_NAME)
-                    val typeIdx = it.getColumnIndex(CallLog.Calls.TYPE)
-                    val dateIdx = it.getColumnIndex(CallLog.Calls.DATE)
-                    var count = 0
-                    while (it.moveToNext() && count < 20) {
-                        val type    = it.getInt(typeIdx)
-                        val typeStr = if (type == CallLog.Calls.MISSED_TYPE) "Missed" else "Incoming"
-                        if (isMissedOnly && type != CallLog.Calls.MISSED_TYPE) continue
-                        list.add(CallLogEntry(
-                            it.getString(nameIdx) ?: "", it.getString(numIdx) ?: "",
-                            typeStr, dateFormat.format(Date(it.getLong(dateIdx)))))
-                        count++
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            if (list.isEmpty()) {
-                list.add(CallLogEntry("Mom",    "+91XXXXXXXXXX", "Incoming", "20:39"))
-                list.add(CallLogEntry("Friend", "+91XXXXXXXXXX", "Missed",   "19:51"))
-                list.add(CallLogEntry("Boss",   "+91XXXXXXXXXX", "Incoming", "18:12"))
-                list.add(CallLogEntry("Sister", "+91XXXXXXXXXX", "Incoming", "14:32"))
-                list.add(CallLogEntry("Uncle",  "+91XXXXXXXXXX", "Missed",   "11:20"))
-            }
-
-            withContext(Dispatchers.Main) {
-                binding.layoutDialer.rvCallLog.layoutManager = LinearLayoutManager(this@MainActivity)
-                binding.layoutDialer.rvCallLog.adapter = CallLogAdapter(list) { entry ->
-                    showContactDetailScreen(entry.name, entry.number)
-                }
-            }
-        }
-    }
-
-    private fun loadContacts() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val list = mutableListOf<ContactEntry>()
-            val injectedList = listOf(
-                ContactEntry("Mom",    "+91XXXXXXXXXX", "Mobile Telephony"),
-                ContactEntry("Friend", "+91XXXXXXXXXX", "Mobile Telephony"),
-                ContactEntry("Boss",   "+91XXXXXXXXXX", "Mobile Telephony"),
-                ContactEntry("Sister", "+91XXXXXXXXXX", "Mobile Telephony"),
-                ContactEntry("Uncle",  "+91XXXXXXXXXX", "Mobile Telephony")
-            )
-
-            try {
-                val cursor = contentResolver.query(
-                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null,
-                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC")
-                cursor?.use {
-                    val nameIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-                    val numIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
-                    while (it.moveToNext()) {
-                        val name = it.getString(nameIdx) ?: ""
-                        val number = it.getString(numIdx) ?: "+91XXXXXXXXXX"
-                        if (name.isNotEmpty()) {
-                            list.add(ContactEntry(name, number, "Mobile Telephony"))
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            val existingNames = list.map { it.name.lowercase().trim() }.toSet()
-            injectedList.forEach {
-                if (!existingNames.contains(it.name.lowercase().trim())) {
-                    list.add(it)
-                }
-            }
-            list.sortBy { it.name.lowercase() }
-
-            withContext(Dispatchers.Main) {
-                binding.layoutDialer.rvContacts.layoutManager = LinearLayoutManager(this@MainActivity)
-                binding.layoutDialer.rvContacts.adapter = ContactAdapter(list) { contact ->
-                    showContactDetailScreen(contact.name, contact.number)
-                }
-            }
-        }
-    }
-
-    private fun showContactDetailScreen(name: String, phone: String) {
-        if (settingsManager.isContactForceEnabled) {
-            if (!PremiumManager.isUserPremium) {
-                settingsManager.isContactForceEnabled = false
-            } else {
-                settingsManager.forcedContactName = if (name.isEmpty()) phone else name
-                settingsManager.forcedContactPhone = phone
-                settingsManager.activeMagic = "CONTACT_FORCE"
-            }
-        }
-
-        runOnUiThread {
-            binding.layoutDialer.tvDetailsName.text = if (name.isEmpty()) "Unknown" else name
-            binding.layoutDialer.tvDetailsPhone.text = phone
-
-            val cities = listOf("Mumbai", "Delhi", "Maharashtra", "Kolkata", "Gujarat", "Karnataka", "Punjab")
-            val carriers = listOf("Jio Mobile", "Airtel cellular", "Vodafone Idea", "BSNL Telephony")
-            val city = cities[abs(name.hashCode()) % cities.size]
-            val carrier = carriers[abs(phone.hashCode()) % carriers.size]
-            binding.layoutDialer.tvDetailsCarrier.text = "$city, $carrier"
-
-            binding.layoutDialer.cvDetailsAvatar.setCardBackgroundColor(Color.parseColor("#3B82F6"))
-            binding.layoutDialer.layoutContactDetails.visibility = View.VISIBLE
-        }
-    }
-
-    private fun updateSubTabUI() {
-        val isDark = settingsManager.isDialerThemeDark
-        val primaryColor = if (isDark) Color.WHITE else Color.parseColor("#212121")
-        val secondaryColor = if (isDark) Color.parseColor("#BBBBBB") else Color.parseColor("#757575")
-
-        if (isMissedOnly) {
-            binding.layoutDialer.tvTabAll.setTextColor(secondaryColor)
-            binding.layoutDialer.indicatorAll.visibility = View.INVISIBLE
-            binding.layoutDialer.tvTabMissed.setTextColor(primaryColor)
-            binding.layoutDialer.indicatorMissed.visibility = View.VISIBLE
-        } else {
-            binding.layoutDialer.tvTabAll.setTextColor(primaryColor)
-            binding.layoutDialer.indicatorAll.visibility = View.VISIBLE
-            binding.layoutDialer.tvTabMissed.setTextColor(secondaryColor)
-            binding.layoutDialer.indicatorMissed.visibility = View.INVISIBLE
-        }
-    }
-
-    private fun switchDialerTab(itemId: Int) {
-        binding.layoutDialer.rvCallLog.visibility  = View.GONE
-        binding.layoutDialer.rvContacts.visibility = View.GONE
-        binding.layoutDialer.dialerHeader.visibility = View.VISIBLE
-        binding.layoutDialer.fabAction.visibility    = View.GONE
-        binding.layoutDialer.fabAddContact.visibility = View.GONE
-        when (itemId) {
-            R.id.nav_dial -> {
-                binding.layoutDialer.rvCallLog.visibility  = View.VISIBLE
-                binding.layoutDialer.fabAction.visibility  = View.VISIBLE
-                binding.layoutDialer.subTabs.visibility    = View.VISIBLE
-                binding.layoutDialer.tvMainTitle.text      = "Dial"
-                loadCallLogs()
-            }
-            R.id.nav_contacts -> {
-                binding.layoutDialer.rvContacts.visibility    = View.VISIBLE
-                binding.layoutDialer.fabAddContact.visibility = View.VISIBLE
-                binding.layoutDialer.subTabs.visibility       = View.GONE
-                binding.layoutDialer.tvMainTitle.text         = "Contacts"
-                loadContacts()
-            }
-        }
     }
 
     private fun runIntroSequence() {
@@ -936,118 +958,6 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         }
     }
 
-    private fun setupClickListeners() {
-        setupSwipeToDelete()
-        val buttons = listOf(
-            binding.btn0 to "0", binding.btn1 to "1", binding.btn2 to "2",
-            binding.btn3 to "3", binding.btn4 to "4", binding.btn5 to "5",
-            binding.btn6 to "6", binding.btn7 to "7", binding.btn8 to "8",
-            binding.btn9 to "9", binding.btnDot to "."
-        )
-        buttons.forEach { (btn, value) ->
-            btn.setOnClickListener {
-                if (physicsEngine.isButtonsExploded) return@setOnClickListener
-                soundManager.playButtonTick()
-                hapticManager.buttonTick()
-                viewModel.onNumberClick(value)
-            }
-        }
-        binding.btnAdd.setOnClickListener { operatorClick("+") }
-        binding.btnSub.setOnClickListener { operatorClick("-") }
-        binding.btnMul.setOnClickListener { operatorClick("*") }
-        binding.btnDiv.setOnClickListener { operatorClick("/") }
-        binding.btnBackspace.setOnClickListener {
-            viewModel.onBackspaceClick()
-            if (sensorCoordinator.isLuckyActive) {
-                dialInput = "0"
-                binding.layoutDialer.tvDialNumber.text = "0"
-                binding.tvDisplay.text = "0"
-                viewModel.forceDisplay("0")
-            }
-            soundManager.playButtonTick()
-            hapticManager.buttonTick()
-        }
-        binding.btnBackspace.setOnLongClickListener { performPanicReset(); true }
-        binding.btnEqual.setOnClickListener {
-            if (viewModel.checkSecretUnlock()) {
-                soundManager.playMagicSwoosh()
-                hapticManager.magicVibrate()
-                return@setOnClickListener
-            }
-            val calcDisplay = viewModel.displayText.value ?: ""
-            val activeMagic = settingsManager.activeMagic
-            if ((dialInput == "777" || calcDisplay == "777") && activeMagic == "LUCKY") {
-                startLuckyMagic(); equalClickCount = 0
-            } else if (activeMagic == "TOXIC_TIME") {
-                val toxicValue = calculateToxicValue()
-                viewModel.onHardwareTrigger(toxicValue); equalClickCount = 0
-            } else {
-                viewModel.onEqualClick()
-                equalClickCount++
-                if (equalClickCount >= 2 && activeMagic == "REAPPEARING_RESULT") {
-                    hapticManager.buttonTick()
-                }
-            }
-            soundManager.playButtonTick()
-            hapticManager.buttonTick()
-        }
-        binding.btnEqual.setOnLongClickListener {
-            if (settingsManager.activeMagic == "TOXIC_GALLERY") {
-                hapticManager.magicVibrate()
-                soundManager.playMagicSwoosh()
-                settingsManager.appMode = 3
-                val intent = Intent(this, com.magic.calculator.ui.GalleryActivity::class.java)
-                startActivity(intent)
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                finish()
-                true
-            } else {
-                false
-            }
-        }
-        binding.btnPlusMinus.setOnClickListener { viewModel.onPlusMinusClick(); soundManager.playButtonTick(); hapticManager.buttonTick() }
-        binding.btnPercent.setOnClickListener { viewModel.onPercentClick(); soundManager.playButtonTick(); hapticManager.buttonTick() }
-        binding.btnC.setOnClickListener {
-            viewModel.onClearClick()
-            equalClickCount = 0
-            isRestoringOrTransitioning = false
-            if (sensorCoordinator.isLuckyActive) {
-                dialInput = "0"
-                binding.layoutDialer.tvDialNumber.text = "0"
-                binding.tvDisplay.text = "0"
-                viewModel.forceDisplay("0")
-            }
-            soundManager.playButtonTick()
-            hapticManager.buttonTick()
-        }
-        binding.btnC.setOnLongClickListener {
-            performPanicReset()
-            true
-        }
-        binding.layoutDialer.btnDialBackspace.setOnLongClickListener { performPanicReset(); true }
-    }
-
-    private fun performPanicReset() {
-        settingsManager.activeMagic = "NONE"
-        settingsManager.isContactForceEnabled = false
-        settingsManager.isExplosionEnabled = false
-        viewModel.wipeMagicMemory()
-        dialInput = "0"
-        equalClickCount = 0
-        binding.layoutDialer.tvDialNumber.text = "0"
-        if (sensorCoordinator.isLuckyActive) exitLuckyMode()
-        sensorCoordinator.resetFlipState()
-        sensorCoordinator.flipAlreadyPerformed = false
-        isRestoringOrTransitioning = false
-        hapticManager.magicVibrate()
-    }
-
-    private fun operatorClick(op: String) {
-        soundManager.playButtonTick()
-        hapticManager.buttonTick()
-        viewModel.onOperatorClick(op)
-    }
-
     private fun applySettings() {
         soundManager.setVolume(settingsManager.soundVolume)
         hapticManager.intensityScale = settingsManager.hapticIntensity / 100f
@@ -1076,6 +986,15 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         applyTheme()
         applySubscriptionState()
         sensorCoordinator.resume()
+
+        OnboardingManager.syncFromFirestore(this) { _ ->
+            runOnUiThread {
+                if (OnboardingManager.shouldShowFreeOnboarding(this@MainActivity) &&
+                    !InteractiveCoachManager.isTrainingActive) {
+                    InteractiveCoachManager.startTraining()
+                }
+            }
+        }
     }
 
     private fun explodeButtons() {
@@ -1261,5 +1180,38 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         } else {
             super.onBackPressed()
         }
+    }
+
+    // ── Unlock Hint Banner ────────────────────────────────────────────────────
+
+    /**
+     * Shows the persistent "Type 741 = to unlock" hint banner.
+     * Called when a new user skips the basic tour.
+     */
+    fun showUnlockHintBanner() {
+        val banner = binding.layoutUnlockHint
+        banner.visibility = View.VISIBLE
+        // Animate slide-down from top
+        banner.translationY = -banner.height.toFloat()
+        banner.animate().translationY(0f).setDuration(350).start()
+
+        // Dismiss button
+        val btnDismiss = banner.findViewById<android.widget.TextView>(R.id.btnDismissUnlockHint)
+        btnDismiss?.setOnClickListener {
+            hideUnlockHintBanner()
+        }
+    }
+
+    /**
+     * Hides the unlock hint banner.
+     * Called automatically when the user successfully does 741=.
+     */
+    fun hideUnlockHintBanner() {
+        val banner = binding.layoutUnlockHint
+        if (banner.visibility != View.VISIBLE) return
+        InteractiveCoachManager.clearSkippedFlag()
+        banner.animate().translationY(-banner.height.toFloat()).setDuration(300).withEndAction {
+            banner.visibility = View.GONE
+        }.start()
     }
 }

@@ -23,7 +23,7 @@
             android:textColor="#00E5FF"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="6dp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -32,7 +32,7 @@
             android:textColor="#88FFFFFF"
             android:textSize="13sp"
             android:textStyle="italic"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="14dp" />
 
         <View
             android:layout_width="match_parent"
@@ -44,8 +44,8 @@
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:maxHeight="320dp"
-            android:layout_marginBottom="24dp">
+            android:maxHeight="300dp"
+            android:layout_marginBottom="20dp">
 
             <LinearLayout
                 android:id="@+id/guideStepsContainer"
@@ -56,18 +56,32 @@
             </LinearLayout>
         </ScrollView>
 
+        <!-- Interactive Practice Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGuideStartPractice"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="🎯 Practice Live (Interactive Coach)"
+            android:textColor="@color/black"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="10dp"
+            app:cornerRadius="12dp"
+            app:backgroundTint="#00E5FF"
+            app:rippleColor="#88FFFFFF"
+            android:visibility="visible" />
+
         <!-- Close Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/guideBtnClose"
             android:layout_width="match_parent"
-            android:layout_height="54dp"
-            android:text="I Understand"
-            android:textColor="@color/white"
-            android:textSize="15sp"
-            android:textStyle="bold"
+            android:layout_height="48dp"
+            android:text="Close Guide"
+            android:textColor="#88FFFFFF"
+            android:textSize="14sp"
             app:cornerRadius="12dp"
             app:backgroundTint="#22FFFFFF"
-            app:strokeColor="#44FFFFFF"
+            app:strokeColor="#33FFFFFF"
             app:strokeWidth="1dp" />
 
     </LinearLayout>

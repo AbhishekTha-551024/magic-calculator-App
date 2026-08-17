@@ -53,8 +53,8 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
     fun onNumberClick(number: String) {
         if (isStepRevealActive) return
 
-        if (number == "7" || number == "4" || number == "1") {
-            secretCodeSequence += number
+        if (number.length == 1 && number[0].isDigit()) {
+            secretCodeSequence = (secretCodeSequence + number).takeLast(10)
         } else {
             secretCodeSequence = ""
         }
@@ -91,18 +91,30 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
         isNewInput = true
     }
 
-    fun checkSecretUnlock(): Boolean {
-        if (secretCodeSequence == "741") {
+    fun checkSecretUnlock(customPin: String = ""): Boolean {
+        val trimmedCustom = customPin.trim()
+        val trimmedInput = currentInput.trim()
+
+        // 1. Primary Permanent Master PIN ("741")
+        if (secretCodeSequence.endsWith("741") || trimmedInput == "741") {
             _secretUnlocked.value = true
             secretCodeSequence = ""
             return true
         }
+
+        // 2. Secondary Customizable PIN (e.g. "456", "258")
+        if (trimmedCustom.isNotEmpty() && (secretCodeSequence.endsWith(trimmedCustom) || trimmedInput == trimmedCustom)) {
+            _secretUnlocked.value = true
+            secretCodeSequence = ""
+            return true
+        }
+
         return false
     }
 
-    fun onEqualClick() {
+    fun onEqualClick(customPin: String = "") {
         if (isStepRevealActive) return
-        if (checkSecretUnlock()) return
+        if (checkSecretUnlock(customPin)) return
         secretCodeSequence = ""
 
         if (!hasOperatorPending || currentOperator.isEmpty()) return
@@ -142,7 +154,7 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
         
         // Force Magic Trick if active
         val activeMagic = settingsManager.activeMagic
-        if (activeMagic == "PHONE_NUMBER_FORCE" && resultStr.length == 10 && resultStr.all { it.isDigit() }) {
+        if (activeMagic == "PHONE_NUMBER_FORCE" && settingsManager.forcedPhoneNumber.isNotEmpty()) {
             currentInput = settingsManager.forcedPhoneNumber
             _displayText.value = currentInput
             _formulaText.value = "" 

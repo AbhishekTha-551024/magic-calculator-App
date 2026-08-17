@@ -610,6 +610,22 @@ object SecretDialogHelper {
         val premiumBadge = dialog.findViewById<View>(R.id.profilePremiumBadge)
         val txtPremiumBadge = dialog.findViewById<TextView>(R.id.profileTxtPremiumBadge)
 
+        val etSecretPasscode = dialog.findViewById<EditText>(R.id.profileEtSecretPasscode)
+        val btnSaveSecretPasscode = dialog.findViewById<Button>(R.id.profileBtnSaveSecretPasscode)
+        val settingsManager = SettingsManager(activity)
+
+        etSecretPasscode?.setText(settingsManager.secretUnlockCode)
+        btnSaveSecretPasscode?.setOnClickListener {
+            val code = etSecretPasscode?.text?.toString()?.trim() ?: ""
+            if (code.length == 3 && code.all { it.isDigit() }) {
+                settingsManager.secretUnlockCode = code
+                Toast.makeText(activity, "Secret Backdoor Code updated to '$code'!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(activity, "Code must be exactly 3 digits (e.g. 741)", Toast.LENGTH_SHORT).show()
+                etSecretPasscode?.setText(settingsManager.secretUnlockCode)
+            }
+        }
+
         val txtProfilePlanStatus = dialog.findViewById<TextView>(R.id.txtProfilePlanStatus)
         val txtProfilePurchaseType = dialog.findViewById<TextView>(R.id.txtProfilePurchaseType)
         val txtProfilePurchaseDate = dialog.findViewById<TextView>(R.id.txtProfilePurchaseDate)
@@ -784,6 +800,7 @@ object SecretDialogHelper {
             dialog.dismiss()
             AuthManager.logout()
             PremiumManager.clearLocalPremium(activity)
+            com.magic.calculator.logic.OnboardingManager.clearLocalState(activity)
             val intent = Intent(activity, LoginActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
@@ -797,7 +814,8 @@ object SecretDialogHelper {
         context: Context,
         title: String,
         steps: List<String>,
-        activeColorHex: String
+        activeColorHex: String,
+        onPracticeClick: (() -> Unit)? = null
     ) {
         val dialog = Dialog(context)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -811,6 +829,7 @@ object SecretDialogHelper {
 
         val txtTitle = dialog.findViewById<TextView>(R.id.guideTitle)
         val containerSteps = dialog.findViewById<LinearLayout>(R.id.guideStepsContainer)
+        val btnPractice = dialog.findViewById<Button>(R.id.btnGuideStartPractice)
         val btnClose = dialog.findViewById<Button>(R.id.guideBtnClose)
 
         txtTitle.text = title
@@ -829,6 +848,16 @@ object SecretDialogHelper {
                 )
             }
             containerSteps.addView(tv)
+        }
+
+        if (onPracticeClick != null) {
+            btnPractice?.visibility = View.VISIBLE
+            btnPractice?.setOnClickListener {
+                dialog.dismiss()
+                onPracticeClick()
+            }
+        } else {
+            btnPractice?.visibility = View.GONE
         }
 
         btnClose.setOnClickListener { dialog.dismiss() }
@@ -954,6 +983,148 @@ object SecretDialogHelper {
             }
             activity.startActivity(intent)
             Toast.makeText(activity, "Testing Contact Force Overlay…", Toast.LENGTH_SHORT).show()
+        }
+
+        dialog.show()
+    }
+
+    fun showToxicTimeConfigDialog(
+        activity: Activity,
+        settingsManager: SettingsManager,
+        onActivateMagic: (String) -> Unit,
+        onStatusChanged: () -> Unit
+    ) {
+        val dialog = Dialog(activity)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_toxic_time_settings)
+
+        dialog.window?.apply {
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setDimAmount(0.85f)
+        }
+
+        val swEnable = dialog.findViewById<SwitchMaterial>(R.id.swToxicEnable)
+        val rbTime = dialog.findViewById<RadioButton>(R.id.rbDialogToxicTime)
+        val rbDate = dialog.findViewById<RadioButton>(R.id.rbDialogToxicDate)
+        val rbBattery = dialog.findViewById<RadioButton>(R.id.rbDialogToxicBattery)
+        val btnClose = dialog.findViewById<ImageView>(R.id.btnCloseToxicDialog)
+        val btnSave = dialog.findViewById<Button>(R.id.dialogBtnSaveToxic)
+
+        swEnable?.isChecked = (settingsManager.activeMagic == "TOXIC_TIME")
+        when (settingsManager.toxicMode) {
+            0 -> rbTime?.isChecked = true
+            1 -> rbDate?.isChecked = true
+            2 -> rbBattery?.isChecked = true
+            else -> rbTime?.isChecked = true
+        }
+
+        btnClose?.setOnClickListener { dialog.dismiss() }
+
+        btnSave?.setOnClickListener {
+            val mode = when {
+                rbTime?.isChecked == true -> 0
+                rbDate?.isChecked == true -> 1
+                rbBattery?.isChecked == true -> 2
+                else -> 0
+            }
+            settingsManager.toxicMode = mode
+            val isChecked = swEnable?.isChecked == true
+            if (isChecked) {
+                onActivateMagic("TOXIC_TIME")
+            } else if (settingsManager.activeMagic == "TOXIC_TIME") {
+                onActivateMagic("NONE")
+            }
+            onStatusChanged()
+            Toast.makeText(activity, "Toxic Time Force settings saved!", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    fun showGhostTypingConfigDialog(
+        activity: Activity,
+        settingsManager: SettingsManager,
+        onActivateMagic: (String) -> Unit,
+        onStatusChanged: () -> Unit
+    ) {
+        val dialog = Dialog(activity)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_ghost_typing_settings)
+
+        dialog.window?.apply {
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setDimAmount(0.85f)
+        }
+
+        val swEnable = dialog.findViewById<SwitchMaterial>(R.id.swGhostEnable)
+        val etGhostNumber = dialog.findViewById<EditText>(R.id.dialogEtGhostNumber)
+        val etGhostDelay = dialog.findViewById<EditText>(R.id.dialogEtGhostDelay)
+        val btnClose = dialog.findViewById<ImageView>(R.id.btnCloseGhostDialog)
+        val btnSave = dialog.findViewById<Button>(R.id.dialogBtnSaveGhost)
+
+        swEnable?.isChecked = (settingsManager.activeMagic == "GHOST_TYPING")
+        etGhostNumber?.setText(settingsManager.ghostTypingNumber)
+        etGhostDelay?.setText(settingsManager.ghostTypingDelay.toString())
+
+        btnClose?.setOnClickListener { dialog.dismiss() }
+
+        btnSave?.setOnClickListener {
+            val num = etGhostNumber?.text?.toString()?.trim() ?: ""
+            val delay = etGhostDelay?.text?.toString()?.toIntOrNull() ?: 5
+            if (num.isNotEmpty()) settingsManager.ghostTypingNumber = num
+            settingsManager.ghostTypingDelay = delay
+
+            val isChecked = swEnable?.isChecked == true
+            if (isChecked) {
+                onActivateMagic("GHOST_TYPING")
+            } else if (settingsManager.activeMagic == "GHOST_TYPING") {
+                onActivateMagic("NONE")
+            }
+            onStatusChanged()
+            Toast.makeText(activity, "Ghost Typing settings saved!", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    fun showGhostRecoveryConfigDialog(
+        activity: Activity,
+        settingsManager: SettingsManager,
+        onActivateMagic: (String) -> Unit,
+        onStatusChanged: () -> Unit
+    ) {
+        val dialog = Dialog(activity)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_ghost_recovery_settings)
+
+        dialog.window?.apply {
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setDimAmount(0.85f)
+        }
+
+        val swEnable = dialog.findViewById<SwitchMaterial>(R.id.swRecoveryEnable)
+        val btnClose = dialog.findViewById<ImageView>(R.id.btnCloseRecoveryDialog)
+        val btnSave = dialog.findViewById<Button>(R.id.dialogBtnSaveRecovery)
+
+        swEnable?.isChecked = (settingsManager.activeMagic == "REAPPEARING_RESULT")
+
+        btnClose?.setOnClickListener { dialog.dismiss() }
+
+        btnSave?.setOnClickListener {
+            val isChecked = swEnable?.isChecked == true
+            if (isChecked) {
+                onActivateMagic("REAPPEARING_RESULT")
+            } else if (settingsManager.activeMagic == "REAPPEARING_RESULT") {
+                onActivateMagic("NONE")
+            }
+            onStatusChanged()
+            Toast.makeText(activity, "Ghost Recovery activated!", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
         }
 
         dialog.show()

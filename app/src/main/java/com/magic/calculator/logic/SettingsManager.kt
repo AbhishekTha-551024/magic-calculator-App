@@ -7,14 +7,17 @@ import android.content.SharedPreferences
  * Persists and manages user preferences for the Magic Calculator.
  * Now supports per-user storage keyed by Firebase UID.
  */
-class SettingsManager(context: Context) {
+class SettingsManager(private val context: Context) {
 
-    // Uses Firebase UID as the prefs file name so each account gets its own settings.
-    // Falls back to a shared name if not logged in (e.g. first launch).
-    private val uid = AuthManager.currentUid ?: "guest"
-    private val prefsName = "magic_calculator_settings_$uid"
+    // Uses dynamic UID so preferences always track the logged in user or guest in real-time
+    private val prefs: SharedPreferences
+        get() {
+            val uid = AuthManager.currentUid ?: "guest"
+            return context.getSharedPreferences("magic_calculator_settings_$uid", Context.MODE_PRIVATE)
+        }
 
-    private val prefs: SharedPreferences = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+    private val globalPrefs: SharedPreferences
+        get() = context.getSharedPreferences("magic_calculator_global_settings", Context.MODE_PRIVATE)
 
     companion object {
         const val DEFAULT_SENSITIVITY = 15f
@@ -54,10 +57,26 @@ class SettingsManager(context: Context) {
         get() = prefs.getString("flip_result", "99") ?: "99"
         set(value) = prefs.edit().putString("flip_result", value).apply()
 
+    var secretUnlockCode: String
+        get() {
+            val code = prefs.getString("secret_unlock_code", null)
+                ?: globalPrefs.getString("secret_unlock_code", "741")
+            return if (code.isNullOrBlank()) "741" else code.trim()
+        }
+        set(value) {
+            val trimmed = value.trim()
+            prefs.edit().putString("secret_unlock_code", trimmed).apply()
+            globalPrefs.edit().putString("secret_unlock_code", trimmed).apply()
+        }
+
     // App Modes: 0 = Magic Calculator, 1 = Dialer Mode, 2 = Real Calculator
     var appMode: Int
         get() = prefs.getInt("app_mode", 0)
         set(value) = prefs.edit().putInt("app_mode", value).apply()
+
+    var userPhoneNumber: String
+        get() = prefs.getString("user_phone_number", "") ?: ""
+        set(value) = prefs.edit().putString("user_phone_number", value.trim()).apply()
 
     var isDialerThemeActive: Boolean
         get() = appMode == 1
