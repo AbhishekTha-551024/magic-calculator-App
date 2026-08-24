@@ -11,3 +11,7 @@ local.properties
 build_log.txt
 build_log_utf8.txt
 app/build
+.env
+*.env
+functions/.env
+functions/.firebase/

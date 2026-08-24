@@ -30,6 +30,13 @@ function getRazorpay() {
 }
 
 const plans = {
+  TEST: {
+    amount: 100,
+    currency: 'INR',
+    purchaseType: 'subscription',
+    expiryDays: 30,
+    description: '₹1 Test Pass (30 Days)',
+  },
   WEEKLY: {
     amount: 9900,
     currency: 'INR',
@@ -44,8 +51,15 @@ const plans = {
     expiryDays: 30,
     description: 'Monthly Pass (30 Days)',
   },
+  YEARLY: {
+    amount: 99900,
+    currency: 'INR',
+    purchaseType: 'subscription',
+    expiryDays: 365,
+    description: '1 Year VIP Pass (365 Days)',
+  },
   LIFETIME: {
-    amount: 29900,
+    amount: 99900,
     currency: 'INR',
     purchaseType: 'lifetime',
     expiryDays: null,

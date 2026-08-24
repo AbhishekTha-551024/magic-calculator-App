@@ -131,6 +131,12 @@ class MoiLockActivity : AppCompatActivity() {
 
         
         animateSwipeHint()
+
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (isPinPadVisible) hidePinPad()
+            }
+        })
     }
 
     private fun setupGestures() {
@@ -265,11 +271,6 @@ class MoiLockActivity : AppCompatActivity() {
             
             finish()
         }, 800)
-    }
-
-    override fun onBackPressed() {
-        if (isPinPadVisible) hidePinPad()
-        // Do nothing else (block back button)
     }
 
     override fun onResume() {

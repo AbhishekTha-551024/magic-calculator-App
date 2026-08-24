@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.material.card.MaterialCardView
+import com.magic.calculator.di.appContainer
 import com.magic.calculator.logic.AuthManager
 import com.magic.calculator.logic.PremiumManager
 import com.magic.calculator.logic.SubscriptionManager
@@ -31,7 +32,7 @@ import org.json.JSONObject
  * 0. Test     (₹1   / 30 Days)   ← DEVELOPER / LIVE TEST
  * 1. Weekly   (₹99  / 7 Days)
  * 2. Monthly  (₹199 / 30 Days)   ← DEFAULT / MOST POPULAR
- * 3. Lifetime (₹299 / Unlimited) ← UNBEATABLE DEAL
+ * 3. Yearly   (₹999 / 365 Days)  ← 1-YEAR VIP ACCESS
  */
 class PremiumActivity : AppCompatActivity(), PaymentResultWithDataListener {
 
@@ -81,10 +82,10 @@ class PremiumActivity : AppCompatActivity(), PaymentResultWithDataListener {
         }
 
         cardLifetime.setOnClickListener {
-            selectedPlan = "LIFETIME"
-            selectedAmountInINR = 299
+            selectedPlan = "YEARLY"
+            selectedAmountInINR = 999
             highlightSelectedCard(cardLifetime, allCards, "#10B981")
-            btnPurchase.text = "Get Lifetime Access for ₹299"
+            btnPurchase.text = "Get 1 Year Pass for ₹999"
         }
 
         // ── Task 3: Restore Purchases Logic ─────────────────────────────────
@@ -116,7 +117,7 @@ class PremiumActivity : AppCompatActivity(), PaymentResultWithDataListener {
             // Safety 25s timeout in case of network stall
             safetyHandler.postDelayed(resetTimeoutRunnable, 25000)
 
-            val settingsManager = com.magic.calculator.logic.SettingsManager(this)
+            val settingsManager = appContainer.settingsManager
             val phone = settingsManager.userPhoneNumber.ifEmpty { AuthManager.currentUser?.phoneNumber ?: "" }
             if (phone.length < 10) {
                 promptForPhoneNumber {
@@ -257,12 +258,13 @@ class PremiumActivity : AppCompatActivity(), PaymentResultWithDataListener {
             "TEST"     -> "₹1 Test Pass (₹1)"
             "WEEKLY"   -> "Weekly Pass (₹99)"
             "MONTHLY"  -> "Monthly Pass (₹199)"
-            "LIFETIME" -> "Lifetime Access (₹299)"
+            "YEARLY"   -> "1 Year VIP Pass (₹999)"
+            "LIFETIME" -> "Lifetime Access (₹999)"
             else       -> "Monthly Pass (₹199)"
         }
 
         try {
-            val settingsManager = com.magic.calculator.logic.SettingsManager(this)
+            val settingsManager = appContainer.settingsManager
             val phone = settingsManager.userPhoneNumber.ifEmpty {
                 AuthManager.currentUser?.phoneNumber ?: ""
             }
@@ -348,7 +350,8 @@ class PremiumActivity : AppCompatActivity(), PaymentResultWithDataListener {
             "TEST"     -> "₹1 Test Pass (30 Days)" to 30
             "WEEKLY"   -> "Weekly Pass (₹99)" to 7
             "MONTHLY"  -> "Monthly Pass (₹199)" to 30
-            "LIFETIME" -> "Lifetime License (₹299)" to 36500
+            "YEARLY"   -> "1 Year VIP Pass (₹999)" to 365
+            "LIFETIME" -> "Lifetime License (₹999)" to 36500
             else       -> "Monthly Pass (₹199)" to 30
         }
 
@@ -481,7 +484,8 @@ class PremiumActivity : AppCompatActivity(), PaymentResultWithDataListener {
             "TEST"     -> "Get ₹1 Test Pass for ₹1"
             "WEEKLY"   -> "Get Weekly Pass for ₹99"
             "MONTHLY"  -> "Get Monthly Pass for ₹199"
-            "LIFETIME" -> "Get Lifetime Access for ₹299"
+            "YEARLY"   -> "Get 1 Year Pass for ₹999"
+            "LIFETIME" -> "Get Lifetime Access for ₹999"
             else       -> "Get Monthly Pass for ₹199"
         }
     }

@@ -217,6 +217,7 @@ object SubscriptionManager {
 
                         val durationDays = when {
                             activePlan.contains("Lifetime", ignoreCase = true) -> 36500
+                            activePlan.contains("Yearly", ignoreCase = true)   -> 365
                             activePlan.contains("Monthly", ignoreCase = true)  -> 30
                             activePlan.contains("Weekly", ignoreCase = true)   -> 7
                             else -> 30

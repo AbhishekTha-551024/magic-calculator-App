@@ -292,7 +292,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Plan 2: Yearly (₹199) - BEST VALUE / POPULAR -->
+        <!-- Plan 2: Monthly (₹199) - MOST POPULAR -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardYearly"
             android:layout_width="match_parent"
@@ -327,7 +327,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Yearly Pass"
+                            android:text="Monthly Pass"
                             android:textColor="#00E5FF"
                             android:textSize="16sp"
                             android:textStyle="bold" />
@@ -348,7 +348,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="30 Days Access • Best value plan"
+                        android:text="30 Days Full Access • Most Popular"
                         android:textColor="#A0A0A5"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -363,7 +363,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Plan 3: Lifetime (₹299) - UNBEATABLE DEAL -->
+        <!-- Plan 3: Yearly (₹999) - 1 YEAR ACCESS -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardLifetime"
             android:layout_width="match_parent"
@@ -397,7 +397,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Lifetime Access"
+                            android:text="1 Year VIP Pass"
                             android:textColor="#10B981"
                             android:textSize="16sp"
                             android:textStyle="bold" />
@@ -409,7 +409,7 @@
                             android:background="@drawable/bg_best_deal_badge"
                             android:paddingHorizontal="8dp"
                             android:paddingVertical="2dp"
-                            android:text="UNBEATABLE DEAL"
+                            android:text="BEST VALUE"
                             android:textColor="#000000"
                             android:textSize="10sp"
                             android:textStyle="bold" />
@@ -418,7 +418,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Unlimited Access • Pay ₹100 extra for lifetime!"
+                        android:text="365 Days Full Access • Complete 1-Year VIP"
                         android:textColor="#A0A0A5"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -426,7 +426,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="₹299"
+                    android:text="₹999"
                     android:textColor="#10B981"
                     android:textSize="22sp"
                     android:textStyle="bold" />

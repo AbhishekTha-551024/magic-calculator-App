@@ -1,6 +1,7 @@
 package com.magic.calculator.network
 
 import android.util.Log
+import com.google.firebase.functions.FirebaseFunctions
 import com.magic.calculator.BuildConfig
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
@@ -12,8 +13,9 @@ import java.util.concurrent.TimeUnit
 /**
  * VercelRazorpayHelper
  *
- * Handles HTTP requests to the live Vercel Razorpay backend:
- * Base URL: https://razor-pay-backend-tau.vercel.app
+ * Handles HTTP requests to the live Vercel Razorpay backend (Base URL: https://razor-pay-backend-tau.vercel.app).
+ * Features automatic high-availability fallback to Firebase Cloud Functions (asia-south1)
+ * if Vercel encounters cold starts, downtime, or network failures.
  */
 object VercelRazorpayHelper {
 
@@ -25,26 +27,21 @@ object VercelRazorpayHelper {
     /**
      * Razorpay Key ID from BuildConfig.
      * Set via buildConfigField in app/build.gradle.
-     * For production: use your live key (rzp_live_...) — never hardcode it here.
      */
     val RAZORPAY_KEY_ID: String
         get() = BuildConfig.RAZORPAY_KEY_ID
 
     // OkHttpClient with proper timeouts — prevents payment hanging on slow/down servers
     private val client = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .writeTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(12, TimeUnit.SECONDS)
+        .readTimeout(12, TimeUnit.SECONDS)
+        .writeTimeout(12, TimeUnit.SECONDS)
         .build()
     private val JSON = "application/json; charset=utf-8".toMediaType()
 
     /**
      * Call /api/create-order on Vercel Backend to generate a Razorpay Order ID.
-     *
-     * @param amount Amount in INR (e.g. 99 for ₹99, 199 for ₹199, 299 for ₹299)
-     * @param planType Plan identifier: WEEKLY, MONTHLY, LIFETIME
-     * @param userId Current Firebase user UID (optional)
-     * @param onResult Callback with success status, orderId, and optional error message.
+     * Falls back to Firebase Cloud Functions if Vercel is unreachable or fails.
      */
     fun createOrder(
         amount: Int,
@@ -72,8 +69,8 @@ object VercelRazorpayHelper {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.e(TAG, "Network error calling create-order", e)
-                onResult(false, null, e.message ?: "Network error. Please check internet connection.")
+                Log.w(TAG, "Vercel create-order failed (${e.message}). Falling back to Firebase Cloud Functions...", e)
+                createOrderFirebaseFallback(planType, onResult)
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -86,43 +83,59 @@ object VercelRazorpayHelper {
 
                         if (isSuccess && orderId.isNotEmpty()) {
                             onResult(true, orderId, null)
-                        } else {
-                            val errorMsg = json.optString("error", "Failed to create order.")
-                            onResult(false, null, errorMsg)
+                            return
                         }
-                    } else {
-                        var detailedError: String? = null
-                        if (!responseString.isNullOrEmpty()) {
-                            try {
-                                val errJson = JSONObject(responseString)
-                                detailedError = errJson.optString("error")
-                            } catch (_: Exception) {}
-                        }
-                        val finalMsg = if (!detailedError.isNullOrEmpty()) {
-                            "Vercel Error (${response.code}): $detailedError\n(Check RAZORPAY_KEY_ID & RAZORPAY_KEY_SECRET in Vercel Dashboard & click Redeploy)"
-                        } else {
-                            "Server error (${response.code})."
-                        }
-                        Log.e(TAG, "HTTP error on create-order: ${response.code} $responseString")
-                        onResult(false, null, finalMsg)
                     }
+
+                    // If Vercel returned an error or HTTP non-200, try Firebase Functions fallback
+                    Log.w(TAG, "Vercel create-order response unsuccessful (${response.code}). Falling back to Firebase Functions...")
+                    createOrderFirebaseFallback(planType, onResult)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Parsing error on create-order response", e)
-                    onResult(false, null, "Invalid server response.")
+                    Log.w(TAG, "Parsing error on Vercel response. Falling back to Firebase Functions...", e)
+                    createOrderFirebaseFallback(planType, onResult)
                 }
             }
         })
     }
 
     /**
+     * Fallback to Firebase Cloud Functions for creating a Razorpay order.
+     */
+    private fun createOrderFirebaseFallback(
+        planType: String,
+        onResult: (success: Boolean, orderId: String?, error: String?) -> Unit
+    ) {
+        try {
+            val functions = FirebaseFunctions.getInstance("asia-south1")
+            val data = hashMapOf(
+                "planType" to planType
+            )
+
+            functions.getHttpsCallable("createRazorpayOrder")
+                .call(data)
+                .addOnSuccessListener { result ->
+                    val resData = result.data as? Map<*, *>
+                    val orderId = resData?.get("orderId") as? String
+                    if (!orderId.isNullOrEmpty()) {
+                        Log.i(TAG, "✅ Firebase Cloud Functions fallback createOrder SUCCESS: orderId=$orderId")
+                        onResult(true, orderId, null)
+                    } else {
+                        onResult(false, null, "Failed to create order on backup server.")
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "❌ Firebase Cloud Functions fallback createOrder FAILED", e)
+                    onResult(false, null, e.localizedMessage ?: "Payment service currently unavailable. Please check your connection.")
+                }
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception initializing Firebase Functions fallback", e)
+            onResult(false, null, e.localizedMessage ?: "Payment service currently unavailable.")
+        }
+    }
+
+    /**
      * Call /api/verify-payment on Vercel Backend to verify Razorpay signature server-side.
-     *
-     * @param orderId Razorpay Order ID
-     * @param paymentId Razorpay Payment ID
-     * @param signature Razorpay Signature returned by Checkout SDK
-     * @param planType Plan identifier: WEEKLY, MONTHLY, LIFETIME
-     * @param userId Current Firebase user UID (optional)
-     * @param onResult Callback returning (success, message)
+     * Falls back to Firebase Cloud Functions if Vercel is unreachable or fails.
      */
     fun verifyPayment(
         orderId: String,
@@ -153,8 +166,8 @@ object VercelRazorpayHelper {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.e(TAG, "Network error calling verify-payment", e)
-                onResult(false, e.message ?: "Network error verifying payment.")
+                Log.w(TAG, "Vercel verify-payment failed (${e.message}). Falling back to Firebase Cloud Functions...", e)
+                verifyPaymentFirebaseFallback(orderId, paymentId, signature, planType, onResult)
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -168,18 +181,61 @@ object VercelRazorpayHelper {
                         if (isSuccess) {
                             val msg = json.optString("message", "Payment verified successfully!")
                             onResult(true, msg)
-                        } else {
-                            val msg = json.optString("message", json.optString("error", "Payment verification failed."))
-                            onResult(false, msg)
+                            return
                         }
-                    } else {
-                        onResult(false, "Empty response from server.")
                     }
+
+                    // If Vercel returned failure or HTTP error, try Firebase Functions fallback
+                    Log.w(TAG, "Vercel verify-payment response unsuccessful (${response.code}). Falling back to Firebase Functions...")
+                    verifyPaymentFirebaseFallback(orderId, paymentId, signature, planType, onResult)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Parsing error on verify-payment response", e)
-                    onResult(false, "Failed to parse verification response.")
+                    Log.w(TAG, "Parsing error on Vercel verify response. Falling back to Firebase Functions...", e)
+                    verifyPaymentFirebaseFallback(orderId, paymentId, signature, planType, onResult)
                 }
             }
         })
     }
+
+    /**
+     * Fallback to Firebase Cloud Functions for verifying Razorpay signature.
+     */
+    private fun verifyPaymentFirebaseFallback(
+        orderId: String,
+        paymentId: String,
+        signature: String,
+        planType: String,
+        onResult: (success: Boolean, message: String) -> Unit
+    ) {
+        try {
+            val functions = FirebaseFunctions.getInstance("asia-south1")
+            val data = hashMapOf(
+                "razorpayOrderId" to orderId,
+                "razorpayPaymentId" to paymentId,
+                "razorpaySignature" to signature,
+                "planType" to planType
+            )
+
+            functions.getHttpsCallable("verifyRazorpayPayment")
+                .call(data)
+                .addOnSuccessListener { result ->
+                    val resData = result.data as? Map<*, *>
+                    val isSuccess = resData?.get("success") == true
+                    val msg = resData?.get("message") as? String ?: "Payment verified successfully!"
+                    if (isSuccess) {
+                        Log.i(TAG, "✅ Firebase Cloud Functions fallback verifyPayment SUCCESS")
+                        onResult(true, msg)
+                    } else {
+                        onResult(false, msg)
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "❌ Firebase Cloud Functions fallback verifyPayment FAILED", e)
+                    onResult(false, e.localizedMessage ?: "Payment verification failed.")
+                }
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception in Firebase Functions verify fallback", e)
+            onResult(false, e.localizedMessage ?: "Payment verification failed.")
+        }
+    }
 }
+

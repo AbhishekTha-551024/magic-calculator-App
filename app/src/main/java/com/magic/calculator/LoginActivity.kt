@@ -3,6 +3,7 @@ package com.magic.calculator
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -10,7 +11,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.magic.calculator.databinding.ActivityLoginBinding
-import com.magic.calculator.logic.AuthManager  // ← THIS was missing
+import com.magic.calculator.logic.AuthManager
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
@@ -18,8 +19,47 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLoginBinding
     private lateinit var googleSignInClient: GoogleSignInClient
 
-    companion object {
-        private const val RC_GOOGLE_SIGN_IN = 9001
+    private val googleSignInLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val data = result.data
+        val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account.idToken ?: run {
+                showLoading(false)
+                showError("Sign-in failed. Please try again.")
+                return@registerForActivityResult
+            }
+            lifecycleScope.launch {
+                val authResult = AuthManager.loginWithGoogle(idToken)
+                authResult.fold(
+                    onSuccess = {
+                        val loggedInUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                        if (loggedInUser != null) {
+                            com.magic.calculator.logic.AppUpdateChecker.checkForUpdate(this@LoginActivity) {
+                                com.magic.calculator.logic.SubscriptionManager.ensureUserDocumentCreated()
+                                com.magic.calculator.logic.OnboardingManager.syncFromFirestore(this@LoginActivity)
+                                com.magic.calculator.logic.SubscriptionManager.syncAndRestorePremiumStatus(this@LoginActivity) { _, _ ->
+                                    showLoading(false)
+                                    goToMain(premiumRestored = true)
+                                }
+                            }
+                        } else {
+                            showLoading(false)
+                            goToMain(premiumRestored = false)
+                        }
+                    },
+                    onFailure = { 
+                        showLoading(false)
+                        showError("Sign-in failed: ${it.message}") 
+                    }
+                )
+            }
+        } catch (e: ApiException) {
+            showLoading(false)
+            showError("Google Sign-In failed (code ${e.statusCode})")
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,8 +85,7 @@ class LoginActivity : AppCompatActivity() {
 
         binding.btnGoogleSignIn.setOnClickListener {
             showLoading(true)
-            val signInIntent = googleSignInClient.signInIntent
-            startActivityForResult(signInIntent, RC_GOOGLE_SIGN_IN)
+            googleSignInLauncher.launch(googleSignInClient.signInIntent)
         }
 
         binding.btnEmailLogin.setOnClickListener {
@@ -109,52 +148,6 @@ class LoginActivity : AppCompatActivity() {
             .requestEmail()
             .build()
         googleSignInClient = GoogleSignIn.getClient(this, gso)
-    }
-
-    @Deprecated("Using for Google Sign-In result")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == RC_GOOGLE_SIGN_IN) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                val idToken = account.idToken ?: run {
-                    showLoading(false)
-                    showError("Sign-in failed. Please try again.")
-                    return
-                }
-                lifecycleScope.launch {
-                    val result = AuthManager.loginWithGoogle(idToken)
-                    result.fold(
-                        onSuccess = {
-                            val loggedInUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                            if (loggedInUser != null) {
-                                // Check for updates first, then restore premium and onboarding state
-                                com.magic.calculator.logic.AppUpdateChecker.checkForUpdate(this@LoginActivity) {
-                                    com.magic.calculator.logic.SubscriptionManager.ensureUserDocumentCreated()
-                                    com.magic.calculator.logic.OnboardingManager.syncFromFirestore(this@LoginActivity)
-                                    com.magic.calculator.logic.SubscriptionManager.syncAndRestorePremiumStatus(this@LoginActivity) { _, _ ->
-                                        showLoading(false)
-                                        goToMain(premiumRestored = true)
-                                    }
-                                }
-                            } else {
-                                showLoading(false)
-                                goToMain(premiumRestored = false)
-                            }
-                        },
-                        onFailure = { 
-                            showLoading(false)
-                            showError("Sign-in failed: ${it.message}") 
-                        }
-                    )
-                }
-            } catch (e: ApiException) {
-                showLoading(false)
-                showError("Google Sign-In failed (code ${e.statusCode})")
-            }
-        }
     }
 
     private fun goToMain(premiumRestored: Boolean = false) {

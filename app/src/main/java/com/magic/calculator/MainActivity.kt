@@ -153,6 +153,20 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         if (OnboardingManager.shouldShowFreeOnboarding(this)) {
             InteractiveCoachManager.startTraining()
         }
+
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (binding.layoutDialer.layoutContactDetails.visibility == View.VISIBLE) {
+                    binding.layoutDialer.layoutContactDetails.visibility = View.GONE
+                } else if (binding.layoutDialer.dialPadOverlay.visibility == View.VISIBLE) {
+                    binding.layoutDialer.dialPadOverlay.visibility = View.GONE
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                    isEnabled = true
+                }
+            }
+        })
     }
 
     fun applySubscriptionState() {
@@ -1169,16 +1183,6 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
                     Toast.makeText(this, "Remote Phone Force Set: $phone", Toast.LENGTH_SHORT).show()
                 }
             }
-        }
-    }
-
-    override fun onBackPressed() {
-        if (binding.layoutDialer.layoutContactDetails.visibility == View.VISIBLE) {
-            binding.layoutDialer.layoutContactDetails.visibility = View.GONE
-        } else if (binding.layoutDialer.dialPadOverlay.visibility == View.VISIBLE) {
-            binding.layoutDialer.dialPadOverlay.visibility = View.GONE
-        } else {
-            super.onBackPressed()
         }
     }
 

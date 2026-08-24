@@ -251,10 +251,76 @@ Managed by [`OnboardingManager.kt`](file:///d:/ThertyDayProjectforCR@/GITHUBUPLO
 
 ## 💳 Monetization & Payment Infrastructure
 
-- **3-Tier Subscription Plans**: 7-Day Pass, 30-Day Pro, Lifetime VIP.
-- **Razorpay Integration**: Native checkout sheet with Firestore webhook confirmation.
-- **Offline License Caching**: Encrypted timestamp verification in `SubscriptionManager`.
-- **Sandbox Testing Tools**: Magician sandbox buttons in the Profile panel for instant testing.
+### 1. Subscription Tier Breakdown
+The app features a 4-tier monetization model managed in `PremiumActivity`:
+
+| Plan ID | Plan Name | Price (INR) | Validity | Entitlement Scope |
+| :---: | :--- | :---: | :---: | :--- |
+| **`TEST`** | **Developer Test Pass** | **₹1** | 30 Days | Live Razorpay / UPI sandbox testing with full PRO unlock |
+| **`WEEKLY`** | **Weekly Pass** | **₹99** | 7 Days | Full access to Dialer, Stealth Gallery, Toxic Tricks, and MoiLock |
+| **`MONTHLY`** | **Monthly Pass** | **₹199** | 30 Days | Full access (Most Popular Tier) |
+| **`YEARLY`** | **1 Year VIP Pass** | **₹999** | 365 Days (1 Year) | Complete 1-Year VIP access to all Pro features |
+
+---
+
+### 2. End-to-End Payment Architecture & Verification
+Payments are secured via a hybrid cloud flow utilizing **Razorpay SDK** and a live **Vercel Serverless Backend**:
+
+```
+[User Taps Purchase] 
+       │
+       ▼
+[PremiumActivity.kt] ──(HTTP POST)──► [Vercel Backend: /api/create-order]
+                                                   │
+                                      (Generates Razorpay Order ID)
+                                                   ▼
+[Razorpay Checkout Sheet] ◄────────────── [Returns Order ID]
+       │
+ (UPI Intent / GPay / PhonePe)
+       │
+       ▼
+[onPaymentSuccess()] ──(HTTP POST)──► [Vercel Backend: /api/verify-payment]
+                                                   │
+                                     (HMAC-SHA256 Signature Verify)
+                                                   ▼
+[PremiumActivity.verifyAndUnlock()] ◄──── [Verification Success]
+       │
+       ├─► 1. SubscriptionManager.saveSubscription() (Local Encrypted Prefs)
+       ├─► 2. PremiumManager.setPremiumState(true) (In-Memory Runtime Flag)
+       └─► 3. FirebaseFirestore: users/{uid} (SetOptions.merge() Write)
+```
+
+---
+
+### 3. Server-Side Signature Verification & Security Controls
+* **Server Verification First**: In `PremiumActivity.kt`, PRO features are **never unlocked on client callback alone**. They require server confirmation from `/api/verify-payment` via HMAC-SHA256 signature verification.
+* **Non-Destructive Cloud Writes**: All Firestore updates to `users/{userId}` utilize `SetOptions.merge()`, guaranteeing that existing payment metadata, `isPremium`, `planType`, and transaction histories can never be accidentally erased or overwritten.
+* **Duplicate Charge Protection**: `isOrderInProgress` gating and an asynchronous 25-second watchdog timer prevent accidental double-taps and network stalls.
+* **Lifecycle State Sync**: `onResume()` in `PremiumActivity` re-verifies subscription status from `Source.SERVER` in case the user completed payment in an external UPI app (PhonePe/GPay) and backgrounded the app.
+* **Multi-Tier Restore Hierarchy**:
+  1. `Source.SERVER` direct live Firestore fetch (bypassing local client cache).
+  2. Firestore local cache fallback on network failure.
+  3. Offline encrypted timestamp license fallback in `SubscriptionManager`.
+
+---
+
+## ☁️ Cloud & Backend Architecture
+
+* **Active Backend**: Vercel Serverless Platform (`https://razor-pay-backend-tau.vercel.app`) handling `/api/create-order` and `/api/verify-payment`.
+* **Database**: Firebase Cloud Firestore with collections:
+  * `users/{userId}`: Subscription status, expiry timestamps, onboarding progress, and user preferences.
+  * `p2p_sessions/{sessionId}`: Real-time bilateral magician display synchronization and covert remote triggering.
+* **Authentication**: Firebase Authentication supporting Email/Password and Google OAuth Sign-In (`play-services-auth:21.2.0`).
+* **App Check**: Firebase App Check configured with `DebugAppCheckProviderFactory` for debug builds and `PlayIntegrityAppCheckProviderFactory` for production release builds.
+
+---
+
+## 🔒 Security & Cryptography
+
+* **Secret Backdoor Code**: Fully customizable 3-digit PIN stored per user in `SettingsManager.secretUnlockCode` (Defaults to `741`).
+* **MoiLock Cryptographic Storage**: PIN hashes and device admin screen locking configured via `PinManager`.
+* **ProGuard / R8 Obfuscation**: Enabled in release builds (`minifyEnabled true`, `shrinkResources true`) to protect proprietary magic algorithms, trigger mechanisms, and API helpers.
+* **Key Injection**: Razorpay API Key ID is injected at build time from `local.properties` via `BuildConfig.RAZORPAY_KEY_ID` and never hardcoded in source control.
 
 ---
 

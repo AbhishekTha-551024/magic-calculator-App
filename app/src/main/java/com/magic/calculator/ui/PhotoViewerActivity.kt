@@ -63,6 +63,15 @@ class PhotoViewerActivity : AppCompatActivity() {
             isBarsVisible = false
         }
 
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (isTaskRoot) {
+                    startActivity(Intent(this@PhotoViewerActivity, GalleryActivity::class.java))
+                }
+                finish()
+            }
+        })
+
         val initialPosition = intent.getIntExtra("EXTRA_POSITION", 1)
         
         // Load all image names
@@ -577,12 +586,5 @@ class PhotoViewerActivity : AppCompatActivity() {
         canvas.drawPath(pathCyan, paint)
 
         imageView.setImageBitmap(bitmap)
-    }
-
-    override fun onBackPressed() {
-        if (isTaskRoot) {
-            startActivity(Intent(this, GalleryActivity::class.java))
-        }
-        super.onBackPressed()
     }
 }
