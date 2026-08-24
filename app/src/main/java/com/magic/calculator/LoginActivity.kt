@@ -87,59 +87,6 @@ class LoginActivity : AppCompatActivity() {
             showLoading(true)
             googleSignInLauncher.launch(googleSignInClient.signInIntent)
         }
-
-        binding.btnEmailLogin.setOnClickListener {
-            handleEmailLogin()
-        }
-
-        binding.tvLoginLink.setOnClickListener {
-            startActivity(Intent(this, SignupActivity::class.java))
-            finish()
-        }
-    }
-
-    private fun handleEmailLogin() {
-        val email = binding.etEmail.text?.toString()?.trim() ?: ""
-        val password = binding.etPassword.text?.toString() ?: ""
-
-        binding.tvError.visibility = View.GONE
-
-        if (email.isEmpty()) {
-            showError("Please enter your email.")
-            return
-        }
-        if (password.length < 6) {
-            showError("Password must be at least 6 characters.")
-            return
-        }
-
-        showLoading(true)
-        lifecycleScope.launch {
-            val result = AuthManager.loginWithEmail(email, password)
-            result.fold(
-                onSuccess = {
-                    val loggedInUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                    if (loggedInUser != null) {
-                        // Check for updates first, then restore premium and onboarding state
-                        com.magic.calculator.logic.AppUpdateChecker.checkForUpdate(this@LoginActivity) {
-                            com.magic.calculator.logic.SubscriptionManager.ensureUserDocumentCreated()
-                            com.magic.calculator.logic.OnboardingManager.syncFromFirestore(this@LoginActivity)
-                            com.magic.calculator.logic.SubscriptionManager.syncAndRestorePremiumStatus(this@LoginActivity) { _, _ ->
-                                showLoading(false)
-                                goToMain(premiumRestored = true)
-                            }
-                        }
-                    } else {
-                        showLoading(false)
-                        showError("Login succeeded but user data is unavailable.")
-                    }
-                },
-                onFailure = {
-                    showLoading(false)
-                    showError(it.message ?: "Login failed. Please try again.")
-                }
-            )
-        }
     }
 
     private fun setupGoogleSignIn() {
@@ -160,11 +107,7 @@ class LoginActivity : AppCompatActivity() {
     private fun showLoading(show: Boolean) {
         binding.progressBar.visibility = if (show) View.VISIBLE else View.GONE
         binding.btnGoogleSignIn.isEnabled = !show
-        binding.btnEmailLogin.isEnabled = !show
-        binding.etEmail.isEnabled = !show
-        binding.etPassword.isEnabled = !show
         binding.btnGoogleSignIn.alpha = if (show) 0.6f else 1.0f
-        binding.btnEmailLogin.alpha = if (show) 0.6f else 1.0f
     }
 
     private fun showError(message: String) {

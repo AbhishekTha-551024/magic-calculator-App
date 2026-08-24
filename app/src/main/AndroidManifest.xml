@@ -39,6 +39,8 @@
         android:name=".MagicApplication"
         android:allowBackup="false"
         android:label="@string/app_name"
+        android:icon="@drawable/ic_app_icon_calculator"
+        android:roundIcon="@drawable/ic_app_icon_calculator"
         android:supportsRtl="true"
         android:theme="@style/Theme.MagicCalculator">
 

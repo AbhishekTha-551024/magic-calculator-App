@@ -17,7 +17,6 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -29,6 +28,7 @@ import com.magic.calculator.logic.PinManager
 import com.magic.calculator.logic.PremiumManager
 import com.magic.calculator.logic.SettingsManager
 import com.magic.calculator.ui.dialogs.SecretDialogHelper
+import com.magic.calculator.ui.util.MagicToast
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
@@ -329,10 +329,10 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                     inputStream?.close()
                     outputStream.close()
                     pinManager.customWallpaperPath = outputFile.absolutePath
-                    Toast.makeText(this, "Custom Wallpaper Saved!", Toast.LENGTH_SHORT).show()
+                    MagicToast.show(this, "Custom Wallpaper Saved!")
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    Toast.makeText(this, "Failed to save wallpaper", Toast.LENGTH_SHORT).show()
+                    MagicToast.show(this, "Failed to save wallpaper")
                 }
             }
         }
@@ -511,7 +511,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                 setupAppModeListener()
                 startActivity(Intent(this, PremiumActivity::class.java))
                 val modeName = if (checkedId == binding.rbDialer.id) "Phone Dialer mode" else "Gallery mode"
-                Toast.makeText(this, "Premium required for $modeName!", Toast.LENGTH_SHORT).show()
+                MagicToast.show(this, "Premium required for $modeName!")
                 return@setOnCheckedChangeListener
             }
 
@@ -806,18 +806,18 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun showHelp(msg: String) {
-        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+        MagicToast.show(this, msg, isLong = true)
     }
 
     private fun setupSaveButtons() {
         binding.btnSavePhone.setOnClickListener {
             settingsManager.forcedPhoneNumber = binding.etForcedPhone.text.toString()
-            Toast.makeText(this, "Phone Magic Saved!", Toast.LENGTH_SHORT).show()
+            MagicToast.show(this, "Phone Magic Saved!")
         }
         binding.btnSaveFlip.setOnClickListener {
             settingsManager.customFlipTrigger = binding.etFlipTrigger.text.toString()
             settingsManager.customFlipResult = binding.etFlipResult.text.toString()
-            Toast.makeText(this, "Digital Flip Saved!", Toast.LENGTH_SHORT).show()
+            MagicToast.show(this, "Digital Flip Saved!")
             com.magic.calculator.logic.InteractiveCoachManager.notifyFlipSaved()
         }
     }
@@ -872,15 +872,15 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     private fun selectAppIcon(iconType: com.magic.calculator.logic.AppIconManager.AppIconType) {
         if (iconType != com.magic.calculator.logic.AppIconManager.AppIconType.CALCULATOR && !PremiumManager.isUserPremium) {
             startActivity(Intent(this, PremiumActivity::class.java))
-            Toast.makeText(this, "Premium required to unlock ${iconType.title} disguise icon!", Toast.LENGTH_SHORT).show()
+            MagicToast.show(this, "Premium required to unlock ${iconType.title} disguise icon!")
             return
         }
         val success = com.magic.calculator.logic.AppIconManager.setAppIcon(this, iconType)
         if (success) {
-            Toast.makeText(this, "Launcher icon updated to ${iconType.title}!", Toast.LENGTH_SHORT).show()
+            MagicToast.show(this, "Launcher icon updated to ${iconType.title}!")
             updateAppIconSelectionUI()
         } else {
-            Toast.makeText(this, "Failed to update app icon.", Toast.LENGTH_SHORT).show()
+            MagicToast.show(this, "Failed to update app icon.")
         }
     }
 
@@ -1134,9 +1134,9 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                     203 -> "Call Log"
                     else -> "Microphone"
                 }
-                Toast.makeText(this, "✓ $name permission granted!", Toast.LENGTH_SHORT).show()
+                MagicToast.show(this, "✓ $name permission granted!")
             } else {
-                Toast.makeText(this, "Permission denied. Tap Enable again in Settings.", Toast.LENGTH_LONG).show()
+                MagicToast.show(this, "Permission denied. Tap Enable again in Settings.", isLong = true)
             }
             checkPermissionsWarningState()
         }
@@ -1193,9 +1193,9 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         }
 
         if (needsPermission) {
-            Toast.makeText(this, "Please grant the requested permission for MoiLock.", Toast.LENGTH_LONG).show()
+            MagicToast.show(this, "Please grant the requested permission for MoiLock.", isLong = true)
         } else {
-            Toast.makeText(this, "All required MoiLock permissions are already granted!", Toast.LENGTH_SHORT).show()
+            MagicToast.show(this, "All required MoiLock permissions are already granted!")
         }
     }
 
@@ -1316,7 +1316,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                         android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                         android.net.Uri.parse("package:$packageName")
                     ))
-                    Toast.makeText(this, "Tap Permissions and enable manually.", Toast.LENGTH_LONG).show()
+                    MagicToast.show(this, "Tap Permissions and enable manually.", isLong = true)
                 } catch (e: Exception) {
                     ActivityCompat.requestPermissions(this, arrayOf(perm), code)
                 }
@@ -1334,7 +1334,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                     android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     android.net.Uri.parse("package:$packageName")
                 ))
-                Toast.makeText(this, "Enable 'Display over other apps' then come back.", Toast.LENGTH_LONG).show()
+                MagicToast.show(this, "Enable 'Display over other apps' then come back.", isLong = true)
             } catch (e: Exception) {
                 startActivity(Intent(
                     android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,

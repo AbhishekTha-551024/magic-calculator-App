@@ -11,9 +11,9 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import com.magic.calculator.R
 import com.magic.calculator.logic.OnboardingManager
+import com.magic.calculator.ui.util.MagicToast
 
 /**
  * InteractiveOnboardingDialog
@@ -115,10 +115,10 @@ object InteractiveOnboardingDialog {
         fun completeTour() {
             if (isProTour) {
                 OnboardingManager.markProOnboardingCompleted(activity)
-                Toast.makeText(activity, "Pro Masterclass Completed! All Advanced Magics Ready.", Toast.LENGTH_SHORT).show()
+                MagicToast.show(activity, "Pro Masterclass Completed! All Advanced Magics Ready.")
             } else {
                 OnboardingManager.markFreeOnboardingCompleted(activity)
-                Toast.makeText(activity, "Magician Tour Completed! Ready to perform.", Toast.LENGTH_SHORT).show()
+                MagicToast.show(activity, "Magician Tour Completed! Ready to perform.")
             }
             dialog.dismiss()
             onDismiss?.invoke()
@@ -161,7 +161,7 @@ object InteractiveOnboardingDialog {
                 hintHeader = "💡 INNOCENT CALCULATOR LOOK",
                 hintBody = "Let spectators hold the phone and type equations like 25 + 25 = 50 to establish 100% credibility.",
                 tryButtonText = "✨ Test Display Feedback",
-                tryAction = { act -> Toast.makeText(act, "Spectator mode active: Standard arithmetic verified!", Toast.LENGTH_SHORT).show() }
+                tryAction = { act -> MagicToast.show(act, "Spectator mode active: Standard arithmetic verified!") }
             ),
             OnboardingStep(
                 title = "Secret Master Backdoor (741=)",
@@ -172,7 +172,7 @@ object InteractiveOnboardingDialog {
                 hintHeader = "🔐 COVERT BACKDOOR ENTRY",
                 hintBody = "The backdoor PIN is 100% invisible to spectators. You can also customize your own 3-digit PIN in 'My Profile'.",
                 tryButtonText = "🔑 Master PIN: 741",
-                tryAction = { act -> Toast.makeText(act, "Master PIN '741=' will always unlock backstage control!", Toast.LENGTH_SHORT).show() }
+                tryAction = { act -> MagicToast.show(act, "Master PIN '741=' will always unlock backstage control!") }
             ),
             OnboardingStep(
                 title = "Core Number Forces",
@@ -183,7 +183,7 @@ object InteractiveOnboardingDialog {
                 hintHeader = "🎲 MENTALISM NUMBER FORCES",
                 hintBody = "Customize your forced phone number and trigger values under the 'Edit Parameters' tab.",
                 tryButtonText = "📱 Practice Digital Flip",
-                tryAction = { act -> Toast.makeText(act, "Flip trigger ready: Entering 66 flips to 99 on trigger!", Toast.LENGTH_SHORT).show() }
+                tryAction = { act -> MagicToast.show(act, "Flip trigger ready: Entering 66 flips to 99 on trigger!") }
             ),
             OnboardingStep(
                 title = "Invisible Sensor Triggers",
@@ -194,7 +194,7 @@ object InteractiveOnboardingDialog {
                 hintHeader = "📡 SENSOR DIAGNOSTICS",
                 hintBody = "Wave your hand over the top edge or tilt the phone slightly to secretly morph the calculated result!",
                 tryButtonText = "🌊 Test Proximity Wave",
-                tryAction = { act -> Toast.makeText(act, "Sensor armed: Wave your hand over the top speaker!", Toast.LENGTH_SHORT).show() }
+                tryAction = { act -> MagicToast.show(act, "Sensor armed: Wave your hand over the top speaker!") }
             )
         )
     }
@@ -210,7 +210,7 @@ object InteractiveOnboardingDialog {
                 hintHeader = "👑 VIP PRO ENTITLEMENTS ACTIVE",
                 hintBody = "All 12 advanced strategies, stealth phone dialer, and dynamic gallery prediction engines are unlocked.",
                 tryButtonText = "✨ Status: PRO MEMBER",
-                tryAction = { act -> Toast.makeText(act, "VIP Status Verified: All Pro engines armed!", Toast.LENGTH_SHORT).show() }
+                tryAction = { act -> MagicToast.show(act, "VIP Status Verified: All Pro engines armed!") }
             ),
             OnboardingStep(
                 title = "Toxic Time Force",
@@ -221,7 +221,7 @@ object InteractiveOnboardingDialog {
                 hintHeader = "⏱️ REAL-TIME SYSTEM FORCE",
                 hintBody = "Spectators can type any random math, yet pressing '=' yields their exact current watch time!",
                 tryButtonText = "🕒 Try Time Force Demo",
-                tryAction = { act -> Toast.makeText(act, "Toxic Time armed: Next equation forces live watch time!", Toast.LENGTH_SHORT).show() }
+                tryAction = { act -> MagicToast.show(act, "Toxic Time armed: Next equation forces live watch time!") }
             ),
             OnboardingStep(
                 title = "Ghost Typing & Recovery",
@@ -232,7 +232,7 @@ object InteractiveOnboardingDialog {
                 hintHeader = "👻 PHANTOM TYPING ENGINE",
                 hintBody = "Set your Ghost Digits and Delay in milliseconds inside the Ghost Typing modal configuration card.",
                 tryButtonText = "👻 Trigger Ghost Pulse",
-                tryAction = { act -> Toast.makeText(act, "Ghost Typing initialized with custom typing cadence!", Toast.LENGTH_SHORT).show() }
+                tryAction = { act -> MagicToast.show(act, "Ghost Typing initialized with custom typing cadence!") }
             ),
             OnboardingStep(
                 title = "P2P Online Magic Link",
@@ -243,7 +243,7 @@ object InteractiveOnboardingDialog {
                 hintHeader = "🌐 DUAL-DEVICE COGNITION",
                 hintBody = "Your accomplice sees whatever digits the spectator types on their phone in real time from across the room.",
                 tryButtonText = "🔗 Check Cloud Link",
-                tryAction = { act -> Toast.makeText(act, "P2P Link: Cloud sync channel ready for dual-screen performance.", Toast.LENGTH_SHORT).show() }
+                tryAction = { act -> MagicToast.show(act, "P2P Link: Cloud sync channel ready for dual-screen performance.") }
             ),
             OnboardingStep(
                 title = "Stealth Gallery & MoiLock",
@@ -254,7 +254,7 @@ object InteractiveOnboardingDialog {
                 hintHeader = "🎭 COMPLETE DISGUISE SUITE",
                 hintBody = "Switch seamlessly between Magic Calculator, Phone Dialer, Photo Gallery, and MoiLock from the Theme tab.",
                 tryButtonText = "🚀 Ready To Perform!",
-                tryAction = { act -> Toast.makeText(act, "You're all set to astound audiences worldwide!", Toast.LENGTH_SHORT).show() }
+                tryAction = { act -> MagicToast.show(act, "You're all set to astound audiences worldwide!") }
             )
         )
     }

@@ -168,78 +168,6 @@
         android:layout_marginHorizontal="20dp"
         app:layout_constraintTop_toBottomOf="@id/llFeatures">
 
-        <!-- Plan 0: Test Offer (₹1) - DEVELOPER / LIVE TEST -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardTest"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            app:cardBackgroundColor="#1A1A1E"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="#FFD700">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
-                android:gravity="center_vertical">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="⚡ 1-Rupee Test Offer"
-                            android:textColor="#FFD700"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:background="@drawable/bg_popular_badge"
-                            android:backgroundTint="#FFD700"
-                            android:paddingHorizontal="6dp"
-                            android:paddingVertical="2dp"
-                            android:text="TEST PASS"
-                            android:textColor="#000000"
-                            android:textSize="9sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Instant ₹1 Live Payment Test • Unlocks Pro"
-                        android:textColor="#A0A0A5"
-                        android:textSize="11sp" />
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="₹1"
-                    android:textColor="#FFD700"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
         <!-- Plan 1: Weekly (₹99) -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardWeekly"
@@ -285,7 +213,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="₹99"
+                    android:text="₹149"
                     android:textColor="@color/white"
                     android:textSize="22sp"
                     android:textStyle="bold" />
@@ -356,7 +284,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="₹199"
+                    android:text="₹299"
                     android:textColor="#00E5FF"
                     android:textSize="22sp"
                     android:textStyle="bold" />
@@ -426,7 +354,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="₹999"
+                    android:text="₹1999"
                     android:textColor="#10B981"
                     android:textSize="22sp"
                     android:textStyle="bold" />
@@ -457,7 +385,7 @@
         android:layout_marginHorizontal="20dp"
         android:layout_marginBottom="16dp"
         android:backgroundTint="#00E5FF"
-        android:text="Get Monthly Pass for ₹199"
+        android:text="Get Monthly Pass for ₹299"
         android:textColor="@color/black"
         android:textSize="16sp"
         android:textStyle="bold"

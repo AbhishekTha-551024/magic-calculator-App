@@ -28,6 +28,7 @@ import com.magic.calculator.logic.PremiumManager
 import com.magic.calculator.logic.SettingsManager
 import com.magic.calculator.logic.SubscriptionManager
 import com.magic.calculator.p2p.P2PLinkManager
+import com.magic.calculator.ui.util.MagicToast
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -430,7 +431,7 @@ object SecretDialogHelper {
             override fun onRemoteDisplayUpdate(display: String, formula: String) {}
             override fun onRemoteCommand(command: String) {}
             override fun onError(message: String) {
-                activity.runOnUiThread { Toast.makeText(activity, message, Toast.LENGTH_LONG).show() }
+                MagicToast.show(activity, message, isLong = true)
             }
         }
 
@@ -438,19 +439,19 @@ object SecretDialogHelper {
             val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("Magic ID", p2p.myMagicId)
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(activity, "Magic ID '${p2p.myMagicId}' copied!", Toast.LENGTH_SHORT).show()
+            MagicToast.show(activity, "Magic ID '${p2p.myMagicId}' copied!")
         }
 
         btnSendRequest.setOnClickListener {
             val targetId = etPartnerMagicId.text.toString().trim()
             if (targetId.isEmpty()) {
-                Toast.makeText(activity, "Enter your partner's Magic ID.", Toast.LENGTH_SHORT).show()
+                MagicToast.show(activity, "Enter your partner's Magic ID.")
                 return@setOnClickListener
             }
             updateStatus(false, null, "Sending request...")
             p2p.sendRequest(targetId) { success, message ->
                 activity.runOnUiThread {
-                    Toast.makeText(activity, message, Toast.LENGTH_LONG).show()
+                    MagicToast.show(activity, message, isLong = true)
                     if (success) {
                         updateStatus(false, null, "Waiting for acceptance...")
                         p2p.listenForAcceptedRequest { sessionId, partnerMagicId ->
@@ -483,7 +484,7 @@ object SecretDialogHelper {
                 cardIncomingRequest.visibility = View.GONE
                 pendingRequestDocId = ""
                 pendingRequestFromId = ""
-                Toast.makeText(activity, "Request declined.", Toast.LENGTH_SHORT).show()
+                MagicToast.show(activity, "Request declined.")
             }
         }
 
@@ -498,18 +499,18 @@ object SecretDialogHelper {
         btnP2PTriggerFlip.setOnClickListener {
             if (p2p.isConnected) {
                 p2p.sendCommand("TRG:FLIP")
-                Toast.makeText(activity, "Flip trigger sent to partner!", Toast.LENGTH_SHORT).show()
+                MagicToast.show(activity, "Flip trigger sent to partner!")
             } else {
-                Toast.makeText(activity, "Not connected to any partner.", Toast.LENGTH_SHORT).show()
+                MagicToast.show(activity, "Not connected to any partner.")
             }
         }
 
         btnP2PTriggerExplosion.setOnClickListener {
             if (p2p.isConnected) {
                 p2p.sendCommand("TRG:EXPL")
-                Toast.makeText(activity, "Explosion trigger sent to partner!", Toast.LENGTH_SHORT).show()
+                MagicToast.show(activity, "Explosion trigger sent to partner!")
             } else {
-                Toast.makeText(activity, "Not connected to any partner.", Toast.LENGTH_SHORT).show()
+                MagicToast.show(activity, "Not connected to any partner.")
             }
         }
 
@@ -558,13 +559,13 @@ object SecretDialogHelper {
                 val validTriggers = setOf("TOUCH", "PROXIMITY", "FACE_DOWN", "LIGHT", "MAGNETIC", "TILT", "GYRO", "VOL_UP", "VOL_DOWN", "CLAP", "FINGERPRINT", "ROTATION_3", "ANY")
                 val invalid = cleaned.filter { it !in validTriggers }
                 if (invalid.isNotEmpty()) {
-                    Toast.makeText(activity, "Invalid triggers: $invalid. Use TOUCH, PROXIMITY, FACE_DOWN, etc.", Toast.LENGTH_LONG).show()
+                    MagicToast.show(activity, "Invalid triggers: $invalid. Use TOUCH, PROXIMITY, etc.", isLong = true)
                 } else {
                     settingsManager.stepRevealSequence = cleaned.joinToString(",")
-                    Toast.makeText(activity, "Sequence saved: ${settingsManager.stepRevealSequence}", Toast.LENGTH_SHORT).show()
+                    MagicToast.show(activity, "Sequence saved: ${settingsManager.stepRevealSequence}")
                 }
             } else {
-                Toast.makeText(activity, "Sequence cannot be empty.", Toast.LENGTH_SHORT).show()
+                MagicToast.show(activity, "Sequence cannot be empty.")
             }
         }
 
@@ -610,9 +611,9 @@ object SecretDialogHelper {
             val code = etSecretPasscode?.text?.toString()?.trim() ?: ""
             if (code.length == 3 && code.all { it.isDigit() }) {
                 settingsManager.secretUnlockCode = code
-                Toast.makeText(activity, "Secret Backdoor Code updated to '$code'!", Toast.LENGTH_SHORT).show()
+                MagicToast.show(activity, "Secret Backdoor Code updated to '$code'!")
             } else {
-                Toast.makeText(activity, "Code must be exactly 3 digits (e.g. 741)", Toast.LENGTH_SHORT).show()
+                MagicToast.show(activity, "Code must be exactly 3 digits (e.g. 741)")
                 etSecretPasscode?.setText(settingsManager.secretUnlockCode)
             }
         }
@@ -769,7 +770,7 @@ object SecretDialogHelper {
         }
 
         cardBackup.setOnClickListener {
-            Toast.makeText(activity, "Configurations Synced to Cloud Securely!", Toast.LENGTH_SHORT).show()
+            MagicToast.show(activity, "Configurations Synced to Cloud Securely!")
         }
 
         btnLogout.setOnClickListener {

@@ -3,10 +3,10 @@ package com.magic.calculator.ui.moilock
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.magic.calculator.R
 import com.magic.calculator.logic.PinManager
+import com.magic.calculator.ui.util.MagicToast
 
 class MoiLockSetupActivity : AppCompatActivity() {
 
@@ -30,13 +30,13 @@ class MoiLockSetupActivity : AppCompatActivity() {
                 pinManager.fakeDate = date
                 finish()
             } else {
-                Toast.makeText(this, "Secret must be 1 digit", Toast.LENGTH_SHORT).show()
+                MagicToast.show(this, "Secret must be 1 digit")
             }
         }
 
         findViewById<Button>(R.id.btnReset).setOnClickListener {
             pinManager.resetLock()
-            Toast.makeText(this, "Trick Reset! Next unlock will capture the PIN.", Toast.LENGTH_LONG).show()
+            MagicToast.show(this, "Trick Reset! Next unlock will capture the PIN.", isLong = true)
             finish()
         }
     }

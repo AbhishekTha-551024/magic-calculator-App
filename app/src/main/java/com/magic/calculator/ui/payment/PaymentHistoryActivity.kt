@@ -61,7 +61,7 @@ class PaymentHistoryActivity : AppCompatActivity() {
                 layoutLoading.visibility = View.GONE
 
                 if (!error.isNullOrEmpty() && records.isEmpty()) {
-                    Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
+                    com.magic.calculator.ui.util.MagicToast.show(this, error)
                 }
 
                 if (records.isEmpty()) {

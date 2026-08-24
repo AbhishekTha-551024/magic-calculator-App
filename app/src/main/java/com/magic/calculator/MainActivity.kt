@@ -15,7 +15,6 @@ import android.view.WindowManager
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -28,6 +27,7 @@ import com.magic.calculator.audio.SoundManager
 import com.magic.calculator.logic.AuthManager
 import com.magic.calculator.databinding.ActivityMainBinding
 import com.magic.calculator.di.appContainer
+import com.magic.calculator.ui.util.MagicToast
 import com.magic.calculator.haptic.HapticManager
 import com.magic.calculator.logic.InteractiveCoachManager
 import com.magic.calculator.logic.MagicEngine
@@ -237,7 +237,7 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
                         .setMessage("Connection request from $fromMagicId.\nAccept to sync displays?")
                         .setPositiveButton("Accept") { _, _ ->
                             p2p.acceptRequest(requestDocId, fromMagicId)
-                            Toast.makeText(this@MainActivity, "Connected to $fromMagicId", Toast.LENGTH_SHORT).show()
+                            MagicToast.show(this@MainActivity, "Connected to $fromMagicId")
                         }
                         .setNegativeButton("Reject") { _, _ ->
                             p2p.declineRequest(requestDocId)
@@ -328,7 +328,7 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         if (isPremiumTrick && !isSubscribed) {
             settingsManager.activeMagic = "NONE"
             startActivity(Intent(this, PremiumActivity::class.java))
-            Toast.makeText(this, "Premium features disabled. Please purchase premium.", Toast.LENGTH_LONG).show()
+            MagicToast.show(this, "Premium features disabled. Please purchase premium.", isLong = true)
             return
         }
 
@@ -1178,12 +1178,12 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
                 command.startsWith("FRC:TIM:") -> {
                     val time = command.substringAfter("FRC:TIM:")
                     settingsManager.forcedGalleryTime = time
-                    Toast.makeText(this, "Remote Prediction Set: $time", Toast.LENGTH_SHORT).show()
+                    MagicToast.show(this, "Remote Prediction Set: $time")
                 }
                 command.startsWith("FRC:PHN:") -> {
                     val phone = command.substringAfter("FRC:PHN:")
                     settingsManager.forcedPhoneNumber = phone
-                    Toast.makeText(this, "Remote Phone Force Set: $phone", Toast.LENGTH_SHORT).show()
+                    MagicToast.show(this, "Remote Phone Force Set: $phone")
                 }
             }
         }

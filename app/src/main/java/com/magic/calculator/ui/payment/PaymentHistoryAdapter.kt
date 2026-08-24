@@ -73,7 +73,7 @@ class PaymentHistoryAdapter(
                 val clipManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
                 val clipData = ClipData.newPlainText("Payment ID", displayPayId)
                 clipManager?.setPrimaryClip(clipData)
-                Toast.makeText(context, "Payment ID copied to clipboard!", Toast.LENGTH_SHORT).show()
+                com.magic.calculator.ui.util.MagicToast.show(context, "Payment ID copied to clipboard!")
             }
         }
     }

@@ -13,12 +13,12 @@ import android.view.View
 import android.view.WindowInsetsController
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.magic.calculator.MainActivity
 import com.magic.calculator.R
+import com.magic.calculator.ui.util.MagicToast
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -217,10 +217,10 @@ class PhotoViewerActivity : AppCompatActivity() {
                 val fileName = imageList[currentPos]
                 if (favoriteImages.contains(fileName)) {
                     favoriteImages.remove(fileName)
-                    Toast.makeText(this, "Removed from Favorites", Toast.LENGTH_SHORT).show()
+                    MagicToast.show(this, "Removed from Favorites")
                 } else {
                     favoriteImages.add(fileName)
-                    Toast.makeText(this, "Added to Favorites", Toast.LENGTH_SHORT).show()
+                    MagicToast.show(this, "Added to Favorites")
                 }
                 updateHeartState()
             }
@@ -295,7 +295,7 @@ class PhotoViewerActivity : AppCompatActivity() {
             }
 
             if (bitmap == null) {
-                Toast.makeText(this, "Failed to load image for sharing", Toast.LENGTH_SHORT).show()
+                MagicToast.show(this, "Failed to load image for sharing")
                 return
             }
 
@@ -365,7 +365,7 @@ class PhotoViewerActivity : AppCompatActivity() {
                     tvCount.text = "${nextPos + 1}/${imageList.size}"
                     updateHeartState()
                 }
-                Toast.makeText(this, "Photo deleted", Toast.LENGTH_SHORT).show()
+                MagicToast.show(this, "Photo deleted")
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -418,15 +418,15 @@ class PhotoViewerActivity : AppCompatActivity() {
                 BitmapFactory.decodeStream(assets.open("gallery/$fileName"))
             }
             if (bitmap == null) {
-                Toast.makeText(this, "Failed to load image for wallpaper", Toast.LENGTH_SHORT).show()
+                MagicToast.show(this, "Failed to load image for wallpaper")
                 return
             }
             val wallpaperManager = android.app.WallpaperManager.getInstance(this)
             wallpaperManager.setBitmap(bitmap)
-            Toast.makeText(this, "Wallpaper set successfully!", Toast.LENGTH_SHORT).show()
+            MagicToast.show(this, "Wallpaper set successfully!")
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(this, "Failed to set wallpaper", Toast.LENGTH_SHORT).show()
+            MagicToast.show(this, "Failed to set wallpaper")
         }
     }
 
