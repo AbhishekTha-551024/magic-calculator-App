@@ -12,6 +12,22 @@ import java.util.Date
 import java.util.Locale
 
 /**
+ * PaymentRecord
+ * Immutable model representing a verified payment transaction.
+ */
+data class PaymentRecord(
+    val orderId: String = "",
+    val paymentId: String = "",
+    val planId: String = "",
+    val planName: String = "",
+    val amount: Int = 0,
+    val currency: String = "INR",
+    val method: String = "UPI",
+    val status: String = "SUCCESS",
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+/**
  * SubscriptionDetails
  * Data class holding subscription metadata.
  */
@@ -330,5 +346,182 @@ object SubscriptionManager {
     fun clearSubscription(context: Context) {
         getPrefs(context).edit().clear().apply()
         PremiumManager.clearSession(context)
+    }
+
+    /**
+     * Fetch complete payment transaction history for the logged-in user.
+     * Queries users/{userId}/transactions with Source.SERVER first, with Source.CACHE fallback.
+     * If no transaction subcollection exists, falls back to the parent user doc and local storage.
+     */
+    fun fetchPaymentHistory(
+        context: Context,
+        onComplete: (List<PaymentRecord>, error: String?) -> Unit
+    ) {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user == null) {
+            // Check offline records if not logged in
+            val details = getSubscriptionDetails(context)
+            if (details.isPremium && details.paymentId != "N/A" && details.paymentId.isNotEmpty()) {
+                val record = PaymentRecord(
+                    orderId = "order_offline",
+                    paymentId = details.paymentId,
+                    planId = details.planType,
+                    planName = details.planType,
+                    amount = estimateAmountFromPlan(details.planType),
+                    currency = "INR",
+                    method = "UPI",
+                    status = "SUCCESS",
+                    timestamp = System.currentTimeMillis()
+                )
+                onComplete(listOf(record), null)
+            } else {
+                onComplete(emptyList(), null)
+            }
+            return
+        }
+
+        val db = FirebaseFirestore.getInstance()
+        val txCollection = db.collection("users").document(user.uid).collection("transactions")
+
+        // 1. Try Source.SERVER
+        txCollection.get(Source.SERVER)
+            .addOnSuccessListener { snapshot ->
+                val list = snapshot.documents.mapNotNull { doc ->
+                    try {
+                        PaymentRecord(
+                            orderId = doc.getString("orderId") ?: doc.id,
+                            paymentId = doc.getString("paymentId") ?: doc.getString("transactionId") ?: "",
+                            planId = doc.getString("planId") ?: doc.getString("planType") ?: "",
+                            planName = doc.getString("planName") ?: doc.getString("planType") ?: "CalcMagic Pro",
+                            amount = doc.getLong("amount")?.toInt() ?: estimateAmountFromPlan(doc.getString("planName") ?: doc.getString("planType") ?: ""),
+                            currency = doc.getString("currency") ?: "INR",
+                            method = doc.getString("method") ?: "UPI",
+                            status = doc.getString("status") ?: "SUCCESS",
+                            timestamp = doc.getLong("timestamp") ?: doc.getLong("activatedAt") ?: System.currentTimeMillis()
+                        )
+                    } catch (e: Exception) {
+                        null
+                    }
+                }.sortedByDescending { it.timestamp }
+
+                if (list.isNotEmpty()) {
+                    onComplete(list, null)
+                } else {
+                    // Fallback to check parent user document if transactions subcollection is empty
+                    fetchFallbackPaymentRecordFromUserDoc(context, user.uid, onComplete)
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Source.SERVER fetch failed for transactions (${e.message}), falling back to Source.CACHE...")
+                // 2. Try Source.CACHE
+                txCollection.get(Source.CACHE)
+                    .addOnSuccessListener { cacheSnapshot ->
+                        val list = cacheSnapshot.documents.mapNotNull { doc ->
+                            try {
+                                PaymentRecord(
+                                    orderId = doc.getString("orderId") ?: doc.id,
+                                    paymentId = doc.getString("paymentId") ?: doc.getString("transactionId") ?: "",
+                                    planId = doc.getString("planId") ?: doc.getString("planType") ?: "",
+                                    planName = doc.getString("planName") ?: doc.getString("planType") ?: "CalcMagic Pro",
+                                    amount = doc.getLong("amount")?.toInt() ?: estimateAmountFromPlan(doc.getString("planName") ?: doc.getString("planType") ?: ""),
+                                    currency = doc.getString("currency") ?: "INR",
+                                    method = doc.getString("method") ?: "UPI",
+                                    status = doc.getString("status") ?: "SUCCESS",
+                                    timestamp = doc.getLong("timestamp") ?: doc.getLong("activatedAt") ?: System.currentTimeMillis()
+                                )
+                            } catch (ex: Exception) {
+                                null
+                            }
+                        }.sortedByDescending { it.timestamp }
+
+                        if (list.isNotEmpty()) {
+                            onComplete(list, null)
+                        } else {
+                            fetchFallbackPaymentRecordFromUserDoc(context, user.uid, onComplete)
+                        }
+                    }
+                    .addOnFailureListener {
+                        fetchFallbackPaymentRecordFromUserDoc(context, user.uid, onComplete)
+                    }
+            }
+    }
+
+    private fun fetchFallbackPaymentRecordFromUserDoc(
+        context: Context,
+        userId: String,
+        onComplete: (List<PaymentRecord>, error: String?) -> Unit
+    ) {
+        val db = FirebaseFirestore.getInstance()
+        db.collection("users").document(userId).get()
+            .addOnSuccessListener { doc ->
+                val paymentId = doc.getString("paymentId") ?: doc.getString("transactionId") ?: ""
+                val orderId = doc.getString("lastOrderId") ?: "order_verified"
+                val planName = doc.getString("planType") ?: "CalcMagic Pro"
+                val activatedAt = doc.getLong("activatedAt") ?: doc.getLong("lastPaymentDate") ?: 0L
+                val isPremium = doc.getBoolean("isPremium") == true || doc.getBoolean("isProUser") == true
+
+                if (paymentId.isNotEmpty() || isPremium) {
+                    val record = PaymentRecord(
+                        orderId = orderId,
+                        paymentId = paymentId.ifEmpty { "pay_verified" },
+                        planId = planName,
+                        planName = planName,
+                        amount = estimateAmountFromPlan(planName),
+                        currency = "INR",
+                        method = "UPI",
+                        status = "SUCCESS",
+                        timestamp = if (activatedAt > 0L) activatedAt else System.currentTimeMillis()
+                    )
+                    onComplete(listOf(record), null)
+                } else {
+                    // Check local SharedPreferences fallback
+                    val details = getSubscriptionDetails(context)
+                    if (details.isPremium && details.paymentId != "N/A" && details.paymentId.isNotEmpty()) {
+                        val record = PaymentRecord(
+                            orderId = "order_offline",
+                            paymentId = details.paymentId,
+                            planId = details.planType,
+                            planName = details.planType,
+                            amount = estimateAmountFromPlan(details.planType),
+                            currency = "INR",
+                            method = "UPI",
+                            status = "SUCCESS",
+                            timestamp = System.currentTimeMillis()
+                        )
+                        onComplete(listOf(record), null)
+                    } else {
+                        onComplete(emptyList(), null)
+                    }
+                }
+            }
+            .addOnFailureListener {
+                val details = getSubscriptionDetails(context)
+                if (details.isPremium && details.paymentId != "N/A" && details.paymentId.isNotEmpty()) {
+                    val record = PaymentRecord(
+                        orderId = "order_offline",
+                        paymentId = details.paymentId,
+                        planId = details.planType,
+                        planName = details.planType,
+                        amount = estimateAmountFromPlan(details.planType),
+                        currency = "INR",
+                        method = "UPI",
+                        status = "SUCCESS",
+                        timestamp = System.currentTimeMillis()
+                    )
+                    onComplete(listOf(record), null)
+                } else {
+                    onComplete(emptyList(), it.localizedMessage)
+                }
+            }
+    }
+
+    private fun estimateAmountFromPlan(planName: String): Int {
+        return when {
+            planName.contains("999", ignoreCase = true) || planName.contains("Yearly", ignoreCase = true) || planName.contains("Lifetime", ignoreCase = true) -> 999
+            planName.contains("199", ignoreCase = true) || planName.contains("Monthly", ignoreCase = true) -> 199
+            planName.contains("99", ignoreCase = true) || planName.contains("Weekly", ignoreCase = true) -> 99
+            planName.contains("1", ignoreCase = true) || planName.contains("Test", ignoreCase = true) -> 1
+            else -> 199
+        }
     }
 }

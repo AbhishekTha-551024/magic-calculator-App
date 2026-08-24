@@ -112,80 +112,81 @@ class SensorCoordinator(
     }
 
     override fun onSensorChanged(event: SensorEvent) {
-        if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
-            shakeDetector.onSensorChanged(event)
-        }
-
-        // Lucky Magic overrides other sensor flows
-        if (settingsManager.activeMagic == "LUCKY" && isLuckyActive) {
-            when (event.sensor.type) {
-                Sensor.TYPE_PROXIMITY  -> if (event.values[0] < 5.0f) listener.onLuckyTrigger(1)
-                Sensor.TYPE_LIGHT      -> if (event.values[0] < 5)    listener.onLuckyTrigger(5)
-                Sensor.TYPE_ACCELEROMETER -> {
-                    shakeDetector.onSensorChanged(event)
-                    if (event.values[2] < -8.5) listener.onLuckyTrigger(2)
-                }
-            }
-            return
-        }
-
-        val activeTrigger = settingsManager.activeSensorTrigger
-        val activeMagic = settingsManager.activeMagic
-
-        when (event.sensor.type) {
-            Sensor.TYPE_PROXIMITY -> {
-                if (event.values[0] < 5.0f) {
-                    if (settingsManager.isExplosionEnabled && settingsManager.explosionTrigger == "PROXIMITY") {
-                        if (PremiumManager.isUserPremium) {
-                            listener.onExplosionTrigger("PROXIMITY")
-                        } else {
-                            settingsManager.isExplosionEnabled = false
-                        }
-                        return
-                    }
-
-                    when {
-                        activeMagic == "STEP_REVEAL" -> listener.onStepRevealTrigger("PROXIMITY")
-                        activeTrigger == "PROXIMITY"  -> listener.onMagicTrigger("PROXIMITY")
-                    }
-                }
-            }
-
-            Sensor.TYPE_LIGHT -> {
-                if (event.values[0] < 5) {
-                    when {
-                        activeMagic == "STEP_REVEAL" -> listener.onStepRevealTrigger("LIGHT")
-                        activeTrigger == "LIGHT"      -> listener.onMagicTrigger("LIGHT")
-                    }
-                }
-            }
-
-            Sensor.TYPE_MAGNETIC_FIELD -> {
-                val strength = sqrt(
-                    (event.values[0] * event.values[0] +
-                     event.values[1] * event.values[1] +
-                     event.values[2] * event.values[2]).toDouble()
-                )
-                if (strength > 120) {
-                    if (settingsManager.isExplosionEnabled && settingsManager.explosionTrigger == "MAGNETIC") {
-                        if (PremiumManager.isUserPremium) {
-                            listener.onExplosionTrigger("MAGNETIC")
-                        } else {
-                            settingsManager.isExplosionEnabled = false
-                        }
-                        return
-                    }
-
-                    when {
-                        activeMagic == "STEP_REVEAL" -> listener.onStepRevealTrigger("MAGNETIC")
-                        activeTrigger == "MAGNETIC"   -> listener.onMagicTrigger("MAGNETIC")
-                    }
-                }
-            }
-
-            Sensor.TYPE_ACCELEROMETER -> {
-                listener.onGravityChanged(event.values[0], event.values[1])
+        try {
+            if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
                 shakeDetector.onSensorChanged(event)
+            }
+
+            // Lucky Magic overrides other sensor flows
+            if (settingsManager.activeMagic == "LUCKY" && isLuckyActive) {
+                when (event.sensor.type) {
+                    Sensor.TYPE_PROXIMITY  -> if (event.values[0] < 5.0f) listener.onLuckyTrigger(1)
+                    Sensor.TYPE_LIGHT      -> if (event.values[0] < 5)    listener.onLuckyTrigger(5)
+                    Sensor.TYPE_ACCELEROMETER -> {
+                        shakeDetector.onSensorChanged(event)
+                        if (event.values[2] < -8.5) listener.onLuckyTrigger(2)
+                    }
+                }
+                return
+            }
+
+            val activeTrigger = settingsManager.activeSensorTrigger
+            val activeMagic = settingsManager.activeMagic
+
+            when (event.sensor.type) {
+                Sensor.TYPE_PROXIMITY -> {
+                    if (event.values[0] < 5.0f) {
+                        if (settingsManager.isExplosionEnabled && settingsManager.explosionTrigger == "PROXIMITY") {
+                            if (PremiumManager.isUserPremium) {
+                                listener.onExplosionTrigger("PROXIMITY")
+                            } else {
+                                settingsManager.isExplosionEnabled = false
+                            }
+                            return
+                        }
+
+                        when {
+                            activeMagic == "STEP_REVEAL" -> listener.onStepRevealTrigger("PROXIMITY")
+                            activeTrigger == "PROXIMITY"  -> listener.onMagicTrigger("PROXIMITY")
+                        }
+                    }
+                }
+
+                Sensor.TYPE_LIGHT -> {
+                    if (event.values[0] < 5) {
+                        when {
+                            activeMagic == "STEP_REVEAL" -> listener.onStepRevealTrigger("LIGHT")
+                            activeTrigger == "LIGHT"      -> listener.onMagicTrigger("LIGHT")
+                        }
+                    }
+                }
+
+                Sensor.TYPE_MAGNETIC_FIELD -> {
+                    val strength = sqrt(
+                        (event.values[0] * event.values[0] +
+                                event.values[1] * event.values[1] +
+                                event.values[2] * event.values[2]).toDouble()
+                    )
+                    if (strength > 120.0) {
+                        if (settingsManager.isExplosionEnabled && settingsManager.explosionTrigger == "MAGNETIC") {
+                            if (PremiumManager.isUserPremium) {
+                                listener.onExplosionTrigger("MAGNETIC")
+                            } else {
+                                settingsManager.isExplosionEnabled = false
+                            }
+                            return
+                        }
+
+                        when {
+                            activeMagic == "STEP_REVEAL" -> listener.onStepRevealTrigger("MAGNETIC")
+                            activeTrigger == "MAGNETIC"   -> listener.onMagicTrigger("MAGNETIC")
+                        }
+                    }
+                }
+
+                Sensor.TYPE_ACCELEROMETER -> {
+                    listener.onGravityChanged(event.values[0], event.values[1])
+                    shakeDetector.onSensorChanged(event)
 
                 if (abs(event.values[0]) > 7) {
                     when {
@@ -207,7 +208,13 @@ class SensorCoordinator(
                 handleGyroscopeEvent(event, activeTrigger, activeMagic)
             }
         }
+    } catch (e: Throwable) {
+        com.magic.calculator.logic.CrashReportingManager.logNonFatal(
+            e,
+            "SensorCoordinator onSensorChanged failed on ${event.sensor.name} (type ${event.sensor.type})"
+        )
     }
+}
 
     private fun handleGyroscopeEvent(
         event: SensorEvent,

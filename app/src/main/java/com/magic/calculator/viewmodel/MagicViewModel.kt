@@ -264,7 +264,12 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        if (currentDisplay == "0" && forcedValue == null) return // Allow 0 for toxic/ghost if forced
+        if (activeMagic == "GHOST_TYPING") {
+            startGhostTyping(settingsManager.ghostTypingNumber)
+            return
+        }
+
+        if (currentDisplay == "0" && forcedValue == null) return // Allow 0 for toxic if forced
 
         if (activeMagic == "NONE") return
 
@@ -296,7 +301,7 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun startGhostTyping(target: String) {
+    fun startGhostTyping(target: String) {
         stopGhostTyping()
         _displayText.value = ""
         currentInput = ""
@@ -308,7 +313,7 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
                     currentInput += target[index]
                     _displayText.value = currentInput
                     index++
-                    ghostTypingHandler.postDelayed(this, 150)
+                    ghostTypingHandler.postDelayed(this, 180)
                 } else {
                     _magicTriggered.value = MagicEngine.TrickType.GHOST_TYPING
                     isNewInput = true
@@ -317,7 +322,7 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         ghostTypingRunnable = typist
-        ghostTypingHandler.postDelayed(typist, 500)
+        ghostTypingHandler.postDelayed(typist, 200)
     }
 
     fun stopGhostTyping() {

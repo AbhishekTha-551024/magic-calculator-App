@@ -283,50 +283,6 @@
                         android:textStyle="bold"
                         android:visibility="gone" />
 
-                    <!-- Simulation / Testing Workspace Section -->
-                    <TextView
-                        android:id="@+id/txtProfileSandboxHeader"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Sandbox Testing Tools"
-                        android:textColor="#88FFFFFF"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="12dp"
-                        android:layout_marginBottom="8dp" />
-
-                    <LinearLayout
-                        android:id="@+id/layoutProfileSandboxButtons"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-                        <Button
-                            android:id="@+id/btnSimulate7Day"
-                            style="?android:attr/buttonStyleSmall"
-                            android:layout_width="0dp"
-                            android:layout_height="36dp"
-                            android:layout_weight="1"
-                            android:text="+ 7 Days"
-                            android:textColor="#FFFFFF"
-                            android:backgroundTint="#2D3139"
-                            android:textSize="10sp"
-                            android:textStyle="bold"
-                            app:cornerRadius="8dp" />
-                        <Button
-                            android:id="@+id/btnSimulateLifetime"
-                            style="?android:attr/buttonStyleSmall"
-                            android:layout_width="0dp"
-                            android:layout_height="36dp"
-                            android:layout_weight="1"
-                            android:layout_marginStart="6dp"
-                            android:text="+ Lifetime"
-                            android:textColor="#18181B"
-                            android:backgroundTint="#FFD700"
-                            android:textSize="10sp"
-                            android:textStyle="bold"
-                            app:cornerRadius="8dp" />
-                    </LinearLayout>
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -340,6 +296,57 @@
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="6dp" />
+
+            <!-- Option: Payment History -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/profileCardPaymentHistory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:foreground="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#0DFFFFFF"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="14dp">
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_receipt"
+                        app:tint="#00E5FF"/>
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Payment History"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="View past transaction receipts and orders"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_help"
+                        app:tint="#44FFFFFF" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
             <!-- Option 0: Secret 3-Digit Backdoor Passcode -->
             <androidx.cardview.widget.CardView

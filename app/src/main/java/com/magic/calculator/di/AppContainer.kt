@@ -48,6 +48,10 @@ class AppContainer(private val context: Context) {
 
     val subscriptionManager: SubscriptionManager
         get() = SubscriptionManager
+
+    val crashReportingManager: com.magic.calculator.logic.CrashReportingManager by lazy {
+        com.magic.calculator.logic.CrashReportingManager.getInstance()
+    }
 }
 
 // ── Convenient Extensions for Android Components ───────────────────────────

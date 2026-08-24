@@ -664,6 +664,9 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
             val toxicValue = calculateToxicValue()
             viewModel.onHardwareTrigger(toxicValue)
             equalClickCount = 0
+        } else if (activeMagic == "GHOST_TYPING") {
+            triggerGhostReveal()
+            equalClickCount = 0
         } else {
             viewModel.onEqualClick(settingsManager.secretUnlockCode)
             equalClickCount++

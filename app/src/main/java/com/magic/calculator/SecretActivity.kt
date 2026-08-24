@@ -357,9 +357,12 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
 
         findViewById<View>(R.id.cardP2PLinkSetting)?.setOnClickListener {
             checkPremiumAndRun {
-                SecretDialogHelper.showP2PLinkPanelDialog(this, settingsManager) {
-                    updateP2PIconStatus()
-                }
+                SecretDialogHelper.showP2PLinkPanelDialog(
+                    activity = this,
+                    settingsManager = settingsManager,
+                    onActivateMagic = { key -> activateMagic(key) },
+                    onStatusChanged = { updateP2PIconStatus() }
+                )
             }
         }
 
@@ -381,17 +384,24 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
 
         findViewById<View>(R.id.cardMoiLockSetting)?.setOnClickListener {
             checkPremiumAndRun {
-                SecretDialogHelper.showMoiLockPanelDialog(this, settingsManager, wallpaperPickerLauncher) {
-                    updateMoiLockIconStatus()
-                }
+                SecretDialogHelper.showMoiLockPanelDialog(
+                    activity = this,
+                    settingsManager = settingsManager,
+                    wallpaperPickerLauncher = wallpaperPickerLauncher,
+                    onActivateMagic = { key -> activateMagic(key) },
+                    onStatusChanged = { updateMoiLockIconStatus() }
+                )
             }
         }
 
         findViewById<View>(R.id.cardExplosionSetting)?.setOnClickListener {
             checkPremiumAndRun {
-                SecretDialogHelper.showExplosionPanelDialog(this, settingsManager) {
-                    updateExplosionIconStatus()
-                }
+                SecretDialogHelper.showExplosionPanelDialog(
+                    activity = this,
+                    settingsManager = settingsManager,
+                    onActivateMagic = { key -> activateMagic(key) },
+                    onStatusChanged = { updateExplosionIconStatus() }
+                )
             }
         }
 
@@ -437,6 +447,10 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                     onStatusChanged = { updateGhostRecoveryIconStatus() }
                 )
             }
+        }
+
+        findViewById<View>(R.id.cardSubmitIdeaSetting)?.setOnClickListener {
+            SecretDialogHelper.showSubmitIdeaDialog(this)
         }
 
         findViewById<View>(R.id.btnPhoneInfo)?.setOnClickListener {
@@ -506,7 +520,6 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                 binding.rbDialer.id -> settingsManager.appMode = 1
                 binding.rbGallery.id -> settingsManager.appMode = 3
             }
-            Toast.makeText(this, "App Mode Updated", Toast.LENGTH_SHORT).show()
             updateMoiLockIconStatus()
 
             val intent = Intent(this, MainActivity::class.java).apply {
@@ -524,6 +537,23 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     private fun activateMagic(key: String) {
         settingsManager.activeMagic = key
         settingsManager.isContactForceEnabled = (key == "CONTACT_FORCE")
+        settingsManager.isExplosionEnabled = (key == "BUTTON_EXPLOSION")
+
+        // Handle MoiLock Mutual Exclusivity
+        if (key == "MOILOCK") {
+            settingsManager.appMode = 4
+        } else {
+            if (settingsManager.appMode == 4) {
+                settingsManager.appMode = 0
+                val serviceIntent = Intent(this, com.magic.calculator.ui.moilock.MoiLockService::class.java)
+                try { stopService(serviceIntent) } catch (e: Exception) { e.printStackTrace() }
+            }
+        }
+
+        // Handle P2P Mutual Exclusivity
+        if (key != "P2P_LINK") {
+            settingsManager.isP2PEnabled = false
+        }
 
         val allSwitches = listOf(
             binding.swFlip to "DIGIT_FLIP",
@@ -542,6 +572,10 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         if (magicNeedsSensor(key)) {
             sensorSection?.visibility = View.VISIBLE
             sensorSection?.alpha = 1.0f
+            if (settingsManager.activeSensorTrigger == "NONE") {
+                settingsManager.activeSensorTrigger = "PROXIMITY"
+                binding.swTrigProximity.isChecked = true
+            }
         } else {
             sensorSection?.visibility = View.GONE
             if (key != "NONE") {
@@ -926,6 +960,28 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         addVirtualTriggerView("FACE_DOWN", "Orientation (Face Down)")
         addVirtualTriggerView("CLAP", "Microphone (Clap/Snap)")
         addVirtualTriggerView("FINGERPRINT", "Fingerprint Sensor")
+
+        if (BuildConfig.DEBUG) {
+            addDebugCrashTestButton()
+        }
+    }
+
+    private fun addDebugCrashTestButton() {
+        val button = com.google.android.material.button.MaterialButton(this).apply {
+            text = "🧪 Trigger Test Crash (Debug Only)"
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#B00020"))
+            setOnClickListener {
+                throw RuntimeException("Test Crash from SecretActivity Sensor Lab (Crashlytics pipeline test)")
+            }
+        }
+        val lp = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            setMargins(0, 16, 0, 16)
+        }
+        binding.sensorListContainer.addView(button, lp)
     }
 
     private fun addSensorView(id: String, name: String, available: Boolean) {
@@ -1146,7 +1202,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     private fun updateMoiLockIconStatus() {
         val imgMoiLockIconLeft = findViewById<android.widget.ImageView>(R.id.imgMoiLockIconLeft) ?: return
         val txtMoiLockTitleLeft = findViewById<TextView>(R.id.txtMoiLockTitleLeft) ?: return
-        if (settingsManager.appMode == 4) {
+        if (settingsManager.appMode == 4 && settingsManager.activeMagic == "MOILOCK") {
             imgMoiLockIconLeft.setColorFilter(Color.parseColor("#A855F7"))
             txtMoiLockTitleLeft.setTextColor(Color.parseColor("#A855F7"))
         } else {
@@ -1170,7 +1226,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     private fun updateExplosionIconStatus() {
         val imgExplosionIconLeft = findViewById<android.widget.ImageView>(R.id.imgExplosionIconLeft) ?: return
         val txtExplosionTitleLeft = findViewById<TextView>(R.id.txtExplosionTitleLeft) ?: return
-        if (settingsManager.isExplosionEnabled) {
+        if (settingsManager.isExplosionEnabled && settingsManager.activeMagic == "BUTTON_EXPLOSION") {
             imgExplosionIconLeft.setColorFilter(Color.parseColor("#FF9100"))
             txtExplosionTitleLeft.setTextColor(Color.parseColor("#FF9100"))
         } else {
@@ -1183,7 +1239,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         val imgIcon = findViewById<android.widget.ImageView>(R.id.imgP2PLinkIconLeft) ?: return
         val txtTitle = findViewById<TextView>(R.id.txtP2PLinkTitleLeft) ?: return
         val p2p = com.magic.calculator.p2p.P2PLinkManager.getInstance()
-        if (p2p.isConnected) {
+        if (p2p.isConnected || (settingsManager.isP2PEnabled && settingsManager.activeMagic == "P2P_LINK")) {
             imgIcon.setColorFilter(Color.parseColor("#00E5FF"))
             txtTitle.setTextColor(Color.parseColor("#00E5FF"))
         } else {

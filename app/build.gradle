@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'com.google.gms.google-services'
+    id 'com.google.firebase.crashlytics'
 }
 
 def localProperties = new Properties()
@@ -101,8 +102,9 @@ dependencies {
     // Firebase Firestore
     implementation 'com.google.firebase:firebase-firestore-ktx'
 
-    // Firebase Analytics
+    // Firebase Analytics & Crashlytics
     implementation 'com.google.firebase:firebase-analytics-ktx'
+    implementation 'com.google.firebase:firebase-crashlytics-ktx'
 
     // Firebase App Check (Play Integrity for Release, Debug Provider for Testing)
     implementation 'com.google.firebase:firebase-appcheck-playintegrity'

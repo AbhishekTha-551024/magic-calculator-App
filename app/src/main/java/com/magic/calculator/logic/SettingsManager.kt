@@ -39,7 +39,10 @@ class SettingsManager(private val context: Context) {
 
     var activeMagic: String
         get() = prefs.getString("active_magic", "NONE") ?: "NONE"
-        set(value) = prefs.edit().putString("active_magic", value).apply()
+        set(value) {
+            prefs.edit().putString("active_magic", value).apply()
+            CrashReportingManager.getInstance().setContext(appMode, value, PremiumManager.isUserPremium)
+        }
 
     var forcedPhoneNumber: String
         get() = prefs.getString("forced_phone", "8815114272") ?: "8815114272"
@@ -72,7 +75,10 @@ class SettingsManager(private val context: Context) {
     // App Modes: 0 = Magic Calculator, 1 = Dialer Mode, 2 = Real Calculator
     var appMode: Int
         get() = prefs.getInt("app_mode", 0)
-        set(value) = prefs.edit().putInt("app_mode", value).apply()
+        set(value) {
+            prefs.edit().putInt("app_mode", value).apply()
+            CrashReportingManager.getInstance().setContext(value, activeMagic, PremiumManager.isUserPremium)
+        }
 
     var userPhoneNumber: String
         get() = prefs.getString("user_phone_number", "") ?: ""

@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.GestureDetector
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
@@ -31,6 +32,8 @@ class MoiLockActivity : AppCompatActivity() {
     private lateinit var gestureDetector: GestureDetector
 
     private var isPinPadVisible = false
+    private val volumeDownHandler = Handler(Looper.getMainLooper())
+    private var volumeDownPanicRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -228,7 +231,69 @@ class MoiLockActivity : AppCompatActivity() {
             button.setOnClickListener { viewModel.addDigit(index.toString()) }
         }
 
-        findViewById<ImageView>(R.id.btnDel).setOnClickListener { viewModel.removeDigit() }
+        findViewById<ImageView>(R.id.btnDel).apply {
+            setOnClickListener { viewModel.removeDigit() }
+            setOnLongClickListener {
+                performPanicExit()
+                true
+            }
+        }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            if (event?.repeatCount == 0) {
+                volumeDownPanicRunnable?.let { volumeDownHandler.removeCallbacks(it) }
+                val panicTask = Runnable {
+                    performPanicExit()
+                }
+                volumeDownPanicRunnable = panicTask
+                // 4 seconds hold -> Panic Unlock & Exit
+                volumeDownHandler.postDelayed(panicTask, 4000L)
+            }
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            volumeDownPanicRunnable?.let { volumeDownHandler.removeCallbacks(it) }
+            volumeDownPanicRunnable = null
+            return true
+        }
+        return super.onKeyUp(keyCode, event)
+    }
+
+    private fun performPanicExit() {
+        // 1. Strong haptic feedback
+        val vibrator = getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator?.vibrate(android.os.VibrationEffect.createOneShot(200, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            vibrator?.vibrate(200)
+        }
+
+        // 2. Stop MoiLock background service & disable lock mode
+        try {
+            val settingsManager = com.magic.calculator.logic.SettingsManager(this)
+            settingsManager.appMode = 0
+            val serviceIntent = Intent(this, MoiLockService::class.java)
+            stopService(serviceIntent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // 3. Reset trick state
+        viewModel.resetTrickState()
+
+        // 4. Return immediately to real Android launcher home screen
+        val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_HOME)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        startActivity(homeIntent)
+        finish()
     }
 
     private fun updateDots(count: Int) {

@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.provider.CallLog
 import android.provider.ContactsContract
+import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.appcompat.app.AppCompatActivity
@@ -24,6 +25,8 @@ import com.magic.calculator.ui.CallLogEntry
 import com.magic.calculator.ui.ContactAdapter
 import com.magic.calculator.ui.ContactEntry
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -133,6 +136,73 @@ class DialerController(
         binding.btnDetailsBack.setOnClickListener {
             binding.layoutContactDetails.visibility = View.GONE
         }
+
+        // 🎩 Video logo को 5 seconds hold करो → Gallery में Contact Force prediction खुलेगी
+        setupVideoButtonMagicHold()
+    }
+
+    /**
+     * Video button पर 5 second silent hold:
+     * - ACTION_DOWN पर countdown शुरू होता है (coroutine Job)
+     * - 5s पूरे होने पर Gallery खुलती है prediction_friends.jpg के साथ
+     * - अगर finger उठा ली (ACTION_UP/CANCEL) तो countdown cancel
+     * - दर्शक को कुछ पता नहीं चलता — बिल्कुल normal Video button लगती है
+     */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private fun setupVideoButtonMagicHold() {
+        val HOLD_DURATION_MS = 2000L
+        var holdJob: Job? = null
+
+        binding.btnDetailsVideo.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    holdJob?.cancel()
+                    holdJob = activity.lifecycleScope.launch {
+                        delay(HOLD_DURATION_MS)
+                        withContext(Dispatchers.Main) {
+                            // ✅ 5 seconds पूरे — Gallery खोलो!
+                            openGalleryWithContactForce()
+                        }
+                    }
+                    false // normal click भी काम करे
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    holdJob?.cancel()
+                    holdJob = null
+                    false
+                }
+                else -> false
+            }
+        }
+    }
+
+    /**
+     * App को Gallery mode में switch करके prediction_friends.jpg खोलता है।
+     * forcedContactName और forcedContactPhone पहले से
+     * showContactDetailScreen() में save हो चुके होते हैं।
+     */
+    private fun openGalleryWithContactForce() {
+        // Gallery mode set करो (appMode = 3)
+        settingsManager.appMode = 3
+
+        // Fallback: अगर नाम/नंबर किसी वजह से खाली हो
+        if (settingsManager.forcedContactName.isEmpty()) {
+            settingsManager.forcedContactName = binding.tvDetailsName.text.toString()
+        }
+        if (settingsManager.forcedContactPhone.isEmpty()) {
+            settingsManager.forcedContactPhone = binding.tvDetailsPhone.text.toString()
+        }
+
+        // prediction_friends.jpg सीधे full-screen में खोलो
+        val intent = Intent(activity, com.magic.calculator.ui.PhotoViewerActivity::class.java).apply {
+            putExtra("EXTRA_IMAGE_NAME", "prediction_friends.jpg")
+            putExtra("EXTRA_POSITION", 1)
+            putExtra("EXTRA_TOTAL", 1)
+            putExtra("EXTRA_HIDE_BARS_INITIALLY", true)
+        }
+        activity.startActivity(intent)
+        activity.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        activity.finish()
     }
 
     private fun handleCallAction() {

@@ -152,6 +152,12 @@
             android:theme="@style/Theme.MagicCalculator" />
 
         <activity
+            android:name=".ui.payment.PaymentHistoryActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.MagicCalculator" />
+
+        <activity
             android:name=".SettingsActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

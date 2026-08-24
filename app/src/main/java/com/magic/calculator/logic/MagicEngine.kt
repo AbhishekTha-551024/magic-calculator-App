@@ -79,19 +79,26 @@ class MagicEngine(private val registry: MagicRegistry = MagicRegistry.getInstanc
         }
 
         if (strategyKey != null) {
-            val context = MagicExecutionContext(
-                forcedPhoneNumber = forcedPhone,
-                forcedLuckyNumber = forcedLucky,
-                customFlipResult = flipResult,
-                toxicValue = forcedLucky
-            )
-            val res = registry.executeTrick(strategyKey, cleaned, context)
-            if (res != null) {
-                return TrickResult(
-                    type = type,
-                    displayValue = res.displayValue,
-                    trickName = res.trickName,
-                    description = res.description
+            try {
+                val context = MagicExecutionContext(
+                    forcedPhoneNumber = forcedPhone,
+                    forcedLuckyNumber = forcedLucky,
+                    customFlipResult = flipResult,
+                    toxicValue = forcedLucky
+                )
+                val res = registry.executeTrick(strategyKey, cleaned, context)
+                if (res != null) {
+                    return TrickResult(
+                        type = type,
+                        displayValue = res.displayValue,
+                        trickName = res.trickName,
+                        description = res.description
+                    )
+                }
+            } catch (e: Throwable) {
+                CrashReportingManager.logNonFatal(
+                    e,
+                    "MagicEngine execution failed for trick: $strategyKey with input: $cleaned"
                 )
             }
         }

@@ -100,65 +100,72 @@ class PhysicsExplosionEngine(
 
         physicsRunnable = object : Runnable {
             override fun run() {
-                if (!isButtonsExploded) return
-                val gx = -gravityX
-                val gy = gravityY
+                try {
+                    if (!isButtonsExploded) return
+                    val gx = -gravityX
+                    val gy = gravityY
 
-                for (i in 0 until count) {
-                    val view = buttonGrid.getChildAt(i)
-                    var vx = velX.getOrDefault(i, 0f)
-                    var vy = velY.getOrDefault(i, 0f)
-                    val accel = 0.5f / mass[i]
-                    val damp = damping[i]
+                    for (i in 0 until count) {
+                        val view = buttonGrid.getChildAt(i)
+                        var vx = velX.getOrDefault(i, 0f)
+                        var vy = velY.getOrDefault(i, 0f)
+                        val accel = 0.5f / mass[i]
+                        val damp = damping[i]
 
-                    vx += gx * accel
-                    vy += gy * accel
-                    vx += (rng.nextFloat() - 0.5f) * 0.5f
-                    vy += (rng.nextFloat() - 0.5f) * 0.5f
-                    vx *= damp
-                    vy *= damp
+                        vx += gx * accel
+                        vy += gy * accel
+                        vx += (rng.nextFloat() - 0.5f) * 0.5f
+                        vy += (rng.nextFloat() - 0.5f) * 0.5f
+                        vx *= damp
+                        vy *= damp
 
-                    var tx = view.translationX + vx
-                    var ty = view.translationY + vy
-                    val maxX = screenW * 0.42f
-                    val maxY = screenH * 0.50f
-                    val minY = -screenH * 0.30f
+                        var tx = view.translationX + vx
+                        var ty = view.translationY + vy
+                        val maxX = screenW * 0.42f
+                        val maxY = screenH * 0.50f
+                        val minY = -screenH * 0.30f
 
-                    if (tx > maxX) { tx = maxX; vx = -vx * 0.35f }
-                    if (tx < -maxX) { tx = -maxX; vx = -vx * 0.35f }
-                    if (ty > maxY) { ty = maxY; vy = -vy * 0.35f }
-                    if (ty < minY) { ty = minY; vy = -vy * 0.35f }
+                        if (tx > maxX) { tx = maxX; vx = -vx * 0.35f }
+                        if (tx < -maxX) { tx = -maxX; vx = -vx * 0.35f }
+                        if (ty > maxY) { ty = maxY; vy = -vy * 0.35f }
+                        if (ty < minY) { ty = minY; vy = -vy * 0.35f }
 
-                    view.translationX = tx
-                    view.translationY = ty
-                    velX[i] = vx
-                    velY[i] = vy
+                        view.translationX = tx
+                        view.translationY = ty
+                        velX[i] = vx
+                        velY[i] = vy
+                    }
+
+                    val di = count
+                    var vx = velX.getOrDefault(di, 0f)
+                    var vy = velY.getOrDefault(di, 0f)
+                    val accel = 0.5f / mass[di]
+
+                    vx += gx * accel + (rng.nextFloat() - 0.5f) * 0.3f
+                    vy += gy * accel + (rng.nextFloat() - 0.5f) * 0.3f
+                    vx *= damping[di]
+                    vy *= damping[di]
+
+                    var tx = tvDisplay.translationX + vx
+                    var ty = tvDisplay.translationY + vy
+
+                    if (tx > screenW * 0.35f) { tx = screenW * 0.35f; vx = -vx * 0.35f }
+                    if (tx < -screenW * 0.35f) { tx = -screenW * 0.35f; vx = -vx * 0.35f }
+                    if (ty > screenH * 0.30f) { ty = screenH * 0.30f; vy = -vy * 0.35f }
+                    if (ty < -screenH * 0.20f) { ty = -screenH * 0.20f; vy = -vy * 0.35f }
+
+                    tvDisplay.translationX = tx
+                    tvDisplay.translationY = ty
+                    velX[di] = vx
+                    velY[di] = vy
+
+                    physicsHandler.postDelayed(this, 16L)
+                } catch (e: Throwable) {
+                    com.magic.calculator.logic.CrashReportingManager.logNonFatal(
+                        e,
+                        "PhysicsExplosionEngine tick loop error"
+                    )
                 }
-
-                val di = count
-                var vx = velX.getOrDefault(di, 0f)
-                var vy = velY.getOrDefault(di, 0f)
-                val accel = 0.5f / mass[di]
-
-                vx += gx * accel + (rng.nextFloat() - 0.5f) * 0.3f
-                vy += gy * accel + (rng.nextFloat() - 0.5f) * 0.3f
-                vx *= damping[di]
-                vy *= damping[di]
-
-                var tx = tvDisplay.translationX + vx
-                var ty = tvDisplay.translationY + vy
-
-                if (tx > screenW * 0.35f) { tx = screenW * 0.35f; vx = -vx * 0.35f }
-                if (tx < -screenW * 0.35f) { tx = -screenW * 0.35f; vx = -vx * 0.35f }
-                if (ty > screenH * 0.30f) { ty = screenH * 0.30f; vy = -vy * 0.35f }
-                if (ty < -screenH * 0.20f) { ty = -screenH * 0.20f; vy = -vy * 0.35f }
-
-                tvDisplay.translationX = tx
-                tvDisplay.translationY = ty
-                velX[di] = vx
-                velY[di] = vy
-
-                physicsHandler.postDelayed(this, 16L)
             }
         }
         physicsHandler.post(physicsRunnable!!)

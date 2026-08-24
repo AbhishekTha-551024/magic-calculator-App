@@ -337,36 +337,50 @@ class PremiumActivity : AppCompatActivity(), PaymentResultWithDataListener {
     override fun onPaymentSuccess(razorpayPaymentId: String?, paymentData: PaymentData?) {
         safetyHandler.removeCallbacks(resetTimeoutRunnable)
 
-        if (razorpayPaymentId.isNullOrEmpty()) {
-            Toast.makeText(this, "Payment ID missing. Contact support.", Toast.LENGTH_LONG).show()
+        try {
+            if (razorpayPaymentId.isNullOrEmpty()) {
+                Toast.makeText(this, "Payment ID missing. Contact support.", Toast.LENGTH_LONG).show()
+                resetPurchaseButton()
+                com.magic.calculator.logic.CrashReportingManager.logNonFatal(
+                    IllegalArgumentException("onPaymentSuccess invoked with null/empty razorpayPaymentId"),
+                    "Payment success callback missing paymentId"
+                )
+                return
+            }
+
+            val orderId = paymentData?.orderId ?: pendingOrderId ?: ""
+            val signature = paymentData?.signature ?: ""
+
+            com.magic.calculator.logic.CrashReportingManager.log("Razorpay onPaymentSuccess: orderId=$orderId paymentId=$razorpayPaymentId")
+
+            val (planName, durationDays) = when (selectedPlan) {
+                "TEST"     -> "₹1 Test Pass (30 Days)" to 30
+                "WEEKLY"   -> "Weekly Pass (₹99)" to 7
+                "MONTHLY"  -> "Monthly Pass (₹199)" to 30
+                "YEARLY"   -> "1 Year VIP Pass (₹999)" to 365
+                "LIFETIME" -> "Lifetime License (₹999)" to 36500
+                else       -> "Monthly Pass (₹199)" to 30
+            }
+
+            val btnPurchase = findViewById<Button>(R.id.btnPurchase)
+            btnPurchase.isEnabled = false
+            btnPurchase.text = "Verifying payment with server..."
+
+            // ── FIX 3 (SECURITY): Verify with Vercel Backend FIRST before granting Pro ──
+            verifyAndUnlock(
+                paymentId = razorpayPaymentId,
+                orderId = orderId,
+                signature = signature,
+                planName = planName,
+                durationDays = durationDays
+            )
+        } catch (e: Throwable) {
+            com.magic.calculator.logic.CrashReportingManager.logNonFatal(
+                e,
+                "Exception in PremiumActivity onPaymentSuccess"
+            )
             resetPurchaseButton()
-            return
         }
-
-        val orderId = paymentData?.orderId ?: pendingOrderId ?: ""
-        val signature = paymentData?.signature ?: ""
-
-        val (planName, durationDays) = when (selectedPlan) {
-            "TEST"     -> "₹1 Test Pass (30 Days)" to 30
-            "WEEKLY"   -> "Weekly Pass (₹99)" to 7
-            "MONTHLY"  -> "Monthly Pass (₹199)" to 30
-            "YEARLY"   -> "1 Year VIP Pass (₹999)" to 365
-            "LIFETIME" -> "Lifetime License (₹999)" to 36500
-            else       -> "Monthly Pass (₹199)" to 30
-        }
-
-        val btnPurchase = findViewById<Button>(R.id.btnPurchase)
-        btnPurchase.isEnabled = false
-        btnPurchase.text = "Verifying payment with server..."
-
-        // ── FIX 3 (SECURITY): Verify with Vercel Backend FIRST before granting Pro ──
-        verifyAndUnlock(
-            paymentId = razorpayPaymentId,
-            orderId = orderId,
-            signature = signature,
-            planName = planName,
-            durationDays = durationDays
-        )
     }
 
     private fun verifyAndUnlock(
@@ -464,6 +478,16 @@ class PremiumActivity : AppCompatActivity(), PaymentResultWithDataListener {
     override fun onPaymentError(code: Int, description: String?, paymentData: PaymentData?) {
         safetyHandler.removeCallbacks(resetTimeoutRunnable)
         Log.e("PremiumActivity", "Razorpay onPaymentError: code=$code description=$description orderId=${paymentData?.orderId} paymentId=${paymentData?.paymentId}")
+        
+        if (code == Checkout.PAYMENT_CANCELED) {
+            com.magic.calculator.logic.CrashReportingManager.log("Payment flow cancelled by user (code $code)")
+        } else {
+            com.magic.calculator.logic.CrashReportingManager.logNonFatal(
+                Exception("Razorpay payment error: code=$code description=$description orderId=${paymentData?.orderId}"),
+                "Payment failed on Razorpay checkout"
+            )
+        }
+
         runOnUiThread {
             resetPurchaseButton()
             if (code == Checkout.PAYMENT_CANCELED) {

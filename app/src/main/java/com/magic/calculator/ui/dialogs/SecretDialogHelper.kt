@@ -51,6 +51,7 @@ object SecretDialogHelper {
         activity: Activity,
         settingsManager: SettingsManager,
         wallpaperPickerLauncher: ActivityResultLauncher<String>,
+        onActivateMagic: (String) -> Unit,
         onStatusChanged: () -> Unit
     ) {
         val dialog = Dialog(activity)
@@ -80,13 +81,12 @@ object SecretDialogHelper {
             try {
                 val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
                 activity.startActivity(intent)
-                Toast.makeText(activity, "Select 'All Apps', find Magic Calculator, and set to 'No Restrictions'!", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
-                Toast.makeText(activity, "Please disable battery restrictions for the app in system settings.", Toast.LENGTH_LONG).show()
+                // Ignore
             }
         }
 
-        swMoiLockEnable.isChecked = (settingsManager.appMode == 4)
+        swMoiLockEnable.isChecked = (settingsManager.appMode == 4 && settingsManager.activeMagic == "MOILOCK")
         etSecret.setText(pinManager.secretDigit)
         etMaster.setText(pinManager.masterPin)
 
@@ -109,7 +109,7 @@ object SecretDialogHelper {
 
         swMoiLockEnable.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                var needsPermission = false
+                onActivateMagic("MOILOCK")
                 val dpm = activity.getSystemService(Context.DEVICE_POLICY_SERVICE) as android.app.admin.DevicePolicyManager
                 val componentName = android.content.ComponentName(activity, com.magic.calculator.ui.moilock.MoiDeviceAdminReceiver::class.java)
                 if (!dpm.isAdminActive(componentName)) {
@@ -118,7 +118,6 @@ object SecretDialogHelper {
                         putExtra(android.app.admin.DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Required to simulate realistic lock screen.")
                     }
                     activity.startActivity(intent)
-                    needsPermission = true
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(activity)) {
                     val intent = Intent(
@@ -126,10 +125,8 @@ object SecretDialogHelper {
                         android.net.Uri.parse("package:${activity.packageName}")
                     )
                     activity.startActivity(intent)
-                    needsPermission = true
                 }
 
-                settingsManager.appMode = 4
                 val serviceIntent = Intent(activity, com.magic.calculator.ui.moilock.MoiLockService::class.java)
                 try {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -140,21 +137,16 @@ object SecretDialogHelper {
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-
-                if (needsPermission) {
-                    Toast.makeText(activity, "Please grant permissions to fully activate MoiLock!", Toast.LENGTH_LONG).show()
-                } else {
-                    Toast.makeText(activity, "MoiLock Enabled & Service Started!", Toast.LENGTH_SHORT).show()
-                }
             } else {
-                settingsManager.appMode = 0
+                if (settingsManager.activeMagic == "MOILOCK" || settingsManager.appMode == 4) {
+                    onActivateMagic("NONE")
+                }
                 val serviceIntent = Intent(activity, com.magic.calculator.ui.moilock.MoiLockService::class.java)
                 try {
                     activity.stopService(serviceIntent)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-                Toast.makeText(activity, "MoiLock Disabled & Service Stopped!", Toast.LENGTH_SHORT).show()
             }
             onStatusChanged()
             updatePermText()
@@ -165,31 +157,23 @@ object SecretDialogHelper {
             if (digit.length == 1) {
                 pinManager.secretDigit = digit
                 pinManager.resetLock()
-                Toast.makeText(activity, "MoiLock Digit Saved & Trick Reset!", Toast.LENGTH_LONG).show()
-            } else {
-                Toast.makeText(activity, "Must be exactly 1 digit!", Toast.LENGTH_SHORT).show()
             }
         }
 
         btnSaveMaster.setOnClickListener {
-            val master = etMaster.text.toString()
-            if (master.length == 5) {
-                pinManager.masterPin = master
-                Toast.makeText(activity, "Master PIN Saved!", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(activity, "Master PIN must be 5 digits!", Toast.LENGTH_SHORT).show()
+            val pin = etMaster.text.toString()
+            if (pin.length == 5) {
+                pinManager.masterPin = pin
             }
         }
 
         btnSelectWallpaper.setOnClickListener {
             wallpaperPickerLauncher.launch("image/*")
-            dialog.dismiss()
         }
 
         btnLaunchMoiLock.setOnClickListener {
             val intent = Intent(activity, com.magic.calculator.ui.moilock.MoiLockActivity::class.java)
             activity.startActivity(intent)
-            dialog.dismiss()
         }
 
         dialog.show()
@@ -230,16 +214,11 @@ object SecretDialogHelper {
             val forcedTime = etForcedTime.text.toString().trim()
             if (forcedTime.isNotEmpty()) {
                 val formatted = forcedTime.replace(".", ":")
-                if (!formatted.contains(":")) {
-                    Toast.makeText(activity, "Please enter a valid time like 4:20 or 4.20", Toast.LENGTH_SHORT).show()
-                } else {
-                    settingsManager.forcedGalleryTime = formatted
-                    Toast.makeText(activity, "Forced Time Saved: $formatted", Toast.LENGTH_SHORT).show()
-                }
+                settingsManager.forcedGalleryTime = formatted
             } else {
                 settingsManager.forcedGalleryTime = "4:20"
-                Toast.makeText(activity, "Reset to default", Toast.LENGTH_SHORT).show()
             }
+            dialog.dismiss()
         }
 
         btnLaunchGallery.setOnClickListener {
@@ -255,6 +234,7 @@ object SecretDialogHelper {
     fun showExplosionPanelDialog(
         activity: Activity,
         settingsManager: SettingsManager,
+        onActivateMagic: (String) -> Unit,
         onStatusChanged: () -> Unit
     ) {
         val dialog = Dialog(activity)
@@ -273,7 +253,7 @@ object SecretDialogHelper {
         val rbExplosionMagnetic = dialog.findViewById<RadioButton>(R.id.dialogRbExplosionMagnetic)
         val btnClose = dialog.findViewById<ImageView>(R.id.btnCloseExplosionDialog)
 
-        swExplosionEnable.isChecked = settingsManager.isExplosionEnabled
+        swExplosionEnable.isChecked = (settingsManager.isExplosionEnabled && settingsManager.activeMagic == "BUTTON_EXPLOSION")
         if (settingsManager.explosionTrigger == "PROXIMITY") {
             rbExplosionProximity.isChecked = true
         } else {
@@ -283,7 +263,11 @@ object SecretDialogHelper {
         btnClose.setOnClickListener { dialog.dismiss() }
 
         swExplosionEnable.setOnCheckedChangeListener { _, isChecked ->
-            settingsManager.isExplosionEnabled = isChecked
+            if (isChecked) {
+                onActivateMagic("BUTTON_EXPLOSION")
+            } else if (settingsManager.activeMagic == "BUTTON_EXPLOSION" || settingsManager.isExplosionEnabled) {
+                onActivateMagic("NONE")
+            }
             onStatusChanged()
         }
 
@@ -298,6 +282,7 @@ object SecretDialogHelper {
     fun showP2PLinkPanelDialog(
         activity: Activity,
         settingsManager: SettingsManager,
+        onActivateMagic: (String) -> Unit,
         onStatusChanged: () -> Unit
     ) {
         val dialog = Dialog(activity)
@@ -331,7 +316,7 @@ object SecretDialogHelper {
         val btnP2PTriggerExplosion = dialog.findViewById<Button>(R.id.btnP2PTriggerExplosion)
         val btnCloseDialog = dialog.findViewById<ImageView>(R.id.btnCloseP2PDialog)
 
-        swP2PEnable.isChecked = settingsManager.isP2PEnabled
+        swP2PEnable.isChecked = (settingsManager.isP2PEnabled && settingsManager.activeMagic == "P2P_LINK")
         layoutP2PContent.visibility = if (settingsManager.isP2PEnabled) View.VISIBLE else View.GONE
 
         var pendingRequestDocId = ""
@@ -605,10 +590,16 @@ object SecretDialogHelper {
         val profileTxtEmail = dialog.findViewById<TextView>(R.id.profileTxtEmail)
         val cardOverlay = dialog.findViewById<View>(R.id.profileCardOverlayPermission)
         val cardBackup = dialog.findViewById<View>(R.id.profileCardCloudBackup)
+        val cardPaymentHistory = dialog.findViewById<View>(R.id.profileCardPaymentHistory)
         val btnLogout = dialog.findViewById<Button>(R.id.profileBtnLogout)
         val btnClose = dialog.findViewById<ImageView>(R.id.btnCloseProfileDialog)
         val premiumBadge = dialog.findViewById<View>(R.id.profilePremiumBadge)
         val txtPremiumBadge = dialog.findViewById<TextView>(R.id.profileTxtPremiumBadge)
+
+        cardPaymentHistory?.setOnClickListener {
+            dialog.dismiss()
+            activity.startActivity(Intent(activity, com.magic.calculator.ui.payment.PaymentHistoryActivity::class.java))
+        }
 
         val etSecretPasscode = dialog.findViewById<EditText>(R.id.profileEtSecretPasscode)
         val btnSaveSecretPasscode = dialog.findViewById<Button>(R.id.profileBtnSaveSecretPasscode)
@@ -639,11 +630,6 @@ object SecretDialogHelper {
         val rowProfileTransactionId = dialog.findViewById<View>(R.id.rowProfileTransactionId)
         val rowProfileExpiry = dialog.findViewById<View>(R.id.rowProfileExpiry)
 
-        val btnSimulate7Day = dialog.findViewById<Button>(R.id.btnSimulate7Day)
-        val btnSimulateLifetime = dialog.findViewById<Button>(R.id.btnSimulateLifetime)
-        val txtProfileSandboxHeader = dialog.findViewById<TextView>(R.id.txtProfileSandboxHeader)
-        val layoutProfileSandboxButtons = dialog.findViewById<View>(R.id.layoutProfileSandboxButtons)
-
         val email = AuthManager.currentUser?.email ?: "guest@magicapp.com"
         profileTxtEmail.text = email
         if (email.isNotEmpty()) {
@@ -665,21 +651,14 @@ object SecretDialogHelper {
 
         btnProfileUpgradeCard.setOnClickListener { triggerPaywall() }
 
-        btnSimulate7Day.text = "Restore Purchase"
-        btnSimulate7Day.setOnClickListener {
-            Toast.makeText(activity, "Restoring purchase from cloud...", Toast.LENGTH_SHORT).show()
-            SubscriptionManager.restoreUserSubscriptionFromFirestore(activity) { success, message ->
+        // Automatically sync and restore premium status in background when profile is viewed
+        SubscriptionManager.syncAndRestorePremiumStatus(activity) { success, _ ->
+            if (success) {
                 activity.runOnUiThread {
-                    Toast.makeText(activity, message, Toast.LENGTH_LONG).show()
-                    if (success) {
-                        onSubscriptionRestored()
-                        dialog.dismiss()
-                    }
+                    onSubscriptionRestored()
                 }
             }
         }
-
-        btnSimulateLifetime.visibility = View.GONE
 
         val localSub = SubscriptionManager.getSubscriptionDetails(activity)
         if (localSub.isPremium) {
@@ -746,9 +725,6 @@ object SecretDialogHelper {
                             rowProfileTransactionId.visibility = View.VISIBLE
                             rowProfileExpiry.visibility = View.VISIBLE
                             btnProfileUpgradeCard.visibility = View.GONE
-
-                            txtProfileSandboxHeader.visibility = View.VISIBLE
-                            layoutProfileSandboxButtons.visibility = View.VISIBLE
 
                             txtProfileTransactionId.text = transactionId
 
@@ -904,7 +880,6 @@ object SecretDialogHelper {
                 putExtra("EXTRA_TOTAL", 1)
             }
             activity.startActivity(intent)
-            Toast.makeText(activity, "Testing Contact Force Overlay View!", Toast.LENGTH_SHORT).show()
         }
 
         dialog.show()
@@ -960,7 +935,6 @@ object SecretDialogHelper {
             }
 
             onStatusChanged()
-            Toast.makeText(activity, "Contact Force settings saved ✓", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
 
@@ -982,7 +956,6 @@ object SecretDialogHelper {
                 putExtra("EXTRA_TOTAL", 1)
             }
             activity.startActivity(intent)
-            Toast.makeText(activity, "Testing Contact Force Overlay…", Toast.LENGTH_SHORT).show()
         }
 
         dialog.show()
@@ -1036,7 +1009,6 @@ object SecretDialogHelper {
                 onActivateMagic("NONE")
             }
             onStatusChanged()
-            Toast.makeText(activity, "Toxic Time Force settings saved!", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
 
@@ -1084,7 +1056,6 @@ object SecretDialogHelper {
                 onActivateMagic("NONE")
             }
             onStatusChanged()
-            Toast.makeText(activity, "Ghost Typing settings saved!", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
 
@@ -1123,8 +1094,117 @@ object SecretDialogHelper {
                 onActivateMagic("NONE")
             }
             onStatusChanged()
-            Toast.makeText(activity, "Ghost Recovery activated!", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    fun showSubmitIdeaDialog(activity: Activity) {
+        val dialog = Dialog(activity)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_submit_magic_idea)
+
+        dialog.window?.apply {
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setDimAmount(0.85f)
+        }
+
+        val btnClose = dialog.findViewById<ImageView>(R.id.btnCloseIdeaDialog)
+        val chipNewTrick = dialog.findViewById<TextView>(R.id.chipNewTrick)
+        val chipQuery = dialog.findViewById<TextView>(R.id.chipQuery)
+        val chipBug = dialog.findViewById<TextView>(R.id.chipBug)
+        val chipImprovement = dialog.findViewById<TextView>(R.id.chipImprovement)
+        val etTitle = dialog.findViewById<EditText>(R.id.etIdeaTitle)
+        val etDesc = dialog.findViewById<EditText>(R.id.etIdeaDescription)
+        val btnWhatsApp = dialog.findViewById<Button>(R.id.btnDirectWhatsApp)
+
+        var selectedCategory = "🎩 New Trick Idea"
+
+        fun updateChips() {
+            val selectedColor = Color.parseColor("#25D366")
+            val unselectedColor = Color.parseColor("#BBFFFFFF")
+
+            chipNewTrick.setTextColor(if (selectedCategory == "🎩 New Trick Idea") selectedColor else unselectedColor)
+            chipQuery.setTextColor(if (selectedCategory == "❓ Question / Query") selectedColor else unselectedColor)
+            chipBug.setTextColor(if (selectedCategory == "🐛 Bug Report") selectedColor else unselectedColor)
+            chipImprovement.setTextColor(if (selectedCategory == "⚡ Feature Improvement") selectedColor else unselectedColor)
+        }
+
+        chipNewTrick.setOnClickListener { selectedCategory = "🎩 New Trick Idea"; updateChips() }
+        chipQuery.setOnClickListener { selectedCategory = "❓ Question / Query"; updateChips() }
+        chipBug.setOnClickListener { selectedCategory = "🐛 Bug Report"; updateChips() }
+        chipImprovement.setOnClickListener { selectedCategory = "⚡ Feature Improvement"; updateChips() }
+
+        btnClose.setOnClickListener { dialog.dismiss() }
+
+        btnWhatsApp.setOnClickListener {
+            val title = etTitle.text.toString().trim()
+            val desc = etDesc.text.toString().trim()
+
+            if (title.isEmpty()) {
+                etTitle.error = "Please enter a subject or title"
+                etTitle.requestFocus()
+                return@setOnClickListener
+            }
+            if (desc.isEmpty()) {
+                etDesc.error = "Please describe your idea or question"
+                etDesc.requestFocus()
+                return@setOnClickListener
+            }
+
+            val targetNumber = "918815114272"
+            val message = """
+                🪄 *Magic Calculator — New Idea / Query*
+                
+                📌 *Category:* $selectedCategory
+                📝 *Subject:* $title
+                
+                💬 *Details:*
+                $desc
+                
+                📱 *Device:* ${Build.MANUFACTURER} ${Build.MODEL}
+                ✨ *App Version:* 3.0
+            """.trimIndent()
+
+            // Also save a background backup copy in Firestore
+            try {
+                val ideaData = hashMapOf(
+                    "category" to selectedCategory,
+                    "title" to title,
+                    "description" to desc,
+                    "whatsappSent" to true,
+                    "targetNumber" to targetNumber,
+                    "userId" to (AuthManager.currentUid ?: "anonymous"),
+                    "userEmail" to (AuthManager.currentUser?.email ?: ""),
+                    "deviceInfo" to "${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE})",
+                    "appVersion" to "3.0",
+                    "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
+                    "status" to "UNREAD"
+                )
+                FirebaseFirestore.getInstance().collection("magic_ideas").add(ideaData)
+            } catch (e: Exception) {
+                // Ignore backup error
+            }
+
+            val url = "https://api.whatsapp.com/send?phone=$targetNumber&text=${android.net.Uri.encode(message)}"
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                data = android.net.Uri.parse(url)
+            }
+
+            try {
+                activity.startActivity(intent)
+                dialog.dismiss()
+            } catch (e: Exception) {
+                try {
+                    val genericIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                    activity.startActivity(genericIntent)
+                    dialog.dismiss()
+                } catch (ex: Exception) {
+                    etDesc.error = "WhatsApp not found on device"
+                }
+            }
         }
 
         dialog.show()
