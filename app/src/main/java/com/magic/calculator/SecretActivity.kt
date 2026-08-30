@@ -376,9 +376,12 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
 
         findViewById<View>(R.id.cardStepRevealSetting)?.setOnClickListener {
             checkPremiumAndRun {
-                SecretDialogHelper.showStepRevealPanelDialog(this, settingsManager) { key ->
-                    activateMagic(key)
-                }
+                SecretDialogHelper.showStepRevealPanelDialog(
+                    activity = this,
+                    settingsManager = settingsManager,
+                    onActivateMagic = { key -> activateMagic(key) },
+                    onStatusChanged = { updateStepRevealIconStatus() }
+                )
             }
         }
 
@@ -531,7 +534,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun magicNeedsSensor(magicKey: String): Boolean {
-        return magicKey in listOf("DIGIT_FLIP", "GHOST_TYPING", "REAPPEARING_RESULT", "STEP_REVEAL")
+        return magicKey in listOf("DIGIT_FLIP", "GHOST_TYPING", "REAPPEARING_RESULT")
     }
 
     private fun activateMagic(key: String) {

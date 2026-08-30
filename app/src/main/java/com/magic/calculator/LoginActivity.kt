@@ -1,6 +1,9 @@
 package com.magic.calculator
 
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,6 +15,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.magic.calculator.databinding.ActivityLoginBinding
 import com.magic.calculator.logic.AuthManager
+import com.magic.calculator.ui.util.MagicToast
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
@@ -28,7 +32,7 @@ class LoginActivity : AppCompatActivity() {
             val account = task.getResult(ApiException::class.java)
             val idToken = account.idToken ?: run {
                 showLoading(false)
-                showError("Sign-in failed. Please try again.")
+                showError("Sign-in incomplete. Please try again.")
                 return@registerForActivityResult
             }
             lifecycleScope.launch {
@@ -52,13 +56,28 @@ class LoginActivity : AppCompatActivity() {
                     },
                     onFailure = { 
                         showLoading(false)
-                        showError("Sign-in failed: ${it.message}") 
+                        val msg = if (!isInternetAvailable()) {
+                            "📶 No Internet Connection • Please turn on Mobile Data or Wi-Fi"
+                        } else {
+                            "📶 Network timeout • Please check your Mobile Data and try again."
+                        }
+                        showError(msg)
+                        MagicToast.show(this@LoginActivity, msg)
                     }
                 )
             }
         } catch (e: ApiException) {
             showLoading(false)
-            showError("Google Sign-In failed (code ${e.statusCode})")
+            e.printStackTrace()
+            val reason = if (!isInternetAvailable() || e.statusCode == 7) {
+                "📶 Network Unavailable • Please turn on Mobile Data or Wi-Fi to sign in."
+            } else when (e.statusCode) {
+                10 -> "⚙️ Developer Configuration Syncing • Please retry in a moment."
+                12500 -> "Google Sign-In canceled or Play Services needs update."
+                else -> "📶 Network is not good. Please check your data connection."
+            }
+            showError(reason)
+            MagicToast.show(this, reason)
         }
     }
 
@@ -84,14 +103,41 @@ class LoginActivity : AppCompatActivity() {
         setupGoogleSignIn()
 
         binding.btnGoogleSignIn.setOnClickListener {
+            if (!isInternetAvailable()) {
+                val netMsg = "📶 No Internet Connection • Please turn on Mobile Data or Wi-Fi"
+                showError(netMsg)
+                MagicToast.show(this, netMsg)
+                return@setOnClickListener
+            }
             showLoading(true)
-            googleSignInLauncher.launch(googleSignInClient.signInIntent)
+            binding.tvError.visibility = View.GONE
+            googleSignInClient.signOut().addOnCompleteListener {
+                googleSignInLauncher.launch(googleSignInClient.signInIntent)
+            }
+        }
+    }
+
+    private fun isInternetAvailable(): Boolean {
+        return try {
+            val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+            val network = cm.activeNetwork ?: return false
+            val capabilities = cm.getNetworkCapabilities(network) ?: return false
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        } catch (e: Exception) {
+            true // Fallback to let system attempt
         }
     }
 
     private fun setupGoogleSignIn() {
+        val webClientId = try {
+            getString(R.string.default_web_client_id)
+        } catch (e: Exception) {
+            com.magic.calculator.BuildConfig.GOOGLE_OAUTH_CLIENT_ID
+        }
+
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(com.magic.calculator.BuildConfig.GOOGLE_OAUTH_CLIENT_ID)
+            .requestIdToken(webClientId)
             .requestEmail()
             .build()
         googleSignInClient = GoogleSignIn.getClient(this, gso)

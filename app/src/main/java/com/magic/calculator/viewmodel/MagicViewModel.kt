@@ -43,6 +43,7 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
     private var currentOperator = ""
     private var isNewInput = true
     private var hasOperatorPending = false
+    val hasPendingOperator: Boolean get() = hasOperatorPending
     private var secretCodeSequence = ""
     private var ghostTypingRunnable: Runnable? = null
     private val ghostTypingHandler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -185,9 +186,9 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
             lastFullResult = ""
             revealDigitIndex = 0
         } else {
-            val displayValue = _displayText.value ?: ""
-            // If we are in Step Reveal mode, hitting AC saves the current display as the target and prepares the reveal
-            if (settingsManager.activeMagic == "STEP_REVEAL" && displayValue != "0" && displayValue.isNotEmpty() && displayValue != "Error") {
+            val displayValue = _displayText.value?.trim() ?: ""
+            // Arm Step Reveal ONLY when user entered exactly 5 digits and pressed AC
+            if (settingsManager.activeMagic == "STEP_REVEAL" && displayValue.length == 5 && displayValue.all { it.isDigit() }) {
                 lastFullResult = displayValue
                 isStepRevealActive = true
                 revealDigitIndex = 0
@@ -342,10 +343,10 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startStepReveal() {
-        val current = _displayText.value ?: ""
+        val current = _displayText.value?.trim() ?: ""
         if (current.isNotEmpty() && current != "0" && current != "Error") {
-            // ONLY ACTIVATE FOR 5 DIGIT NUMBERS
-            if (current.length != 5) return
+            // ONLY ACTIVATE FOR EXACTLY 5 DIGIT NUMBERS
+            if (current.length != 5 || !current.all { it.isDigit() }) return
 
             lastFullResult = current
             _displayText.value = "0"
@@ -357,13 +358,13 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Called when user presses = with a number in STEP_REVEAL mode.
+    /** Called when user sets a number in STEP_REVEAL mode.
      *  Saves the number as the forced reveal number and starts the sequence. */
     fun saveAndStartReveal(number: String) {
-        // ONLY ACTIVATE FOR 5 DIGIT NUMBERS
-        if (number.length != 5) return
+        val trimmed = number.trim()
+        if (trimmed.length != 5 || !trimmed.all { it.isDigit() }) return
 
-        lastFullResult = number
+        lastFullResult = trimmed
         _displayText.value = "0"
         currentInput = ""
         revealDigitIndex = 0
@@ -383,7 +384,7 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private var lastRevealTime = 0L
-    private val REVEAL_COOLDOWN = 2000L // 2.0 seconds between steps
+    private val REVEAL_COOLDOWN = 1500L // 1.5 seconds between steps
 
     fun getRevealDigitIndex(): Int = revealDigitIndex
 
@@ -395,16 +396,16 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastRevealTime < REVEAL_COOLDOWN) return
 
-        // 1st digit: TOUCH
-        // 2nd digit: PROXIMITY
-        // 3rd digit: FACE_DOWN
-        // 4th digit: LIGHT
-        // 5th digit: TOUCH
+        // The LAST digit is always revealed by tapping the top area of screen (Ghost Flight)
         val isLastDigit = (revealDigitIndex == lastFullResult.length - 1) && (lastFullResult.length > 1)
         
         val sequenceList = settingsManager.stepRevealSequence.split(",").map { it.trim().uppercase() }
-        val requiredTrigger = if (isLastDigit) "TOUCH" else {
-            if (revealDigitIndex < sequenceList.size) sequenceList[revealDigitIndex] else "TOUCH"
+        val requiredTrigger = if (isLastDigit) {
+            "TOUCH"
+        } else {
+            // Intermediate digits: use Step 1..4 in order, cycling if length > 5
+            val stepIndex = revealDigitIndex % 4
+            sequenceList.getOrElse(stepIndex) { "TOUCH" }
         }
 
         if (triggerType == requiredTrigger || requiredTrigger == "ANY") {
@@ -413,7 +414,7 @@ class MagicViewModel(application: Application) : AndroidViewModel(application) {
             val digit = lastFullResult[revealDigitIndex].toString()
 
             if (isLastDigit) {
-                // The last digit is placed at the tapped spot first
+                // The last digit is placed at the tapped top spot first and flies into display
                 if (isTop) {
                     _newGhostDigit.value = GhostDigit(digit, x, y, isLast = true)
                     revealDigitIndex++

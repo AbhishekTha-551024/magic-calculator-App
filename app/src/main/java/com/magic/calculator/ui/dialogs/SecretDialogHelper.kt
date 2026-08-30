@@ -522,10 +522,78 @@ object SecretDialogHelper {
         dialog.show()
     }
 
+    private fun getTriggerDisplayName(trigger: String): String {
+        return when (trigger.uppercase()) {
+            "TOUCH" -> "👆 Screen Touch"
+            "PROXIMITY" -> "👋 Proximity Wave"
+            "FACE_DOWN" -> "📱 Face Down (Flip)"
+            "LIGHT" -> "🌗 Light / Shadow"
+            "MAGNETIC" -> "🧲 Magnetic / PK Ring"
+            "TILT" -> "📐 Tilt / Motion"
+            "VOL_DOWN" -> "🔉 Volume Down"
+            "VOL_UP" -> "🔊 Volume Up"
+            "ANY" -> "🎲 Any Sensor Trigger"
+            else -> "👆 Screen Touch"
+        }
+    }
+
+    private fun getTriggerSubtitle(trigger: String, stepNumber: Int): String {
+        return when (trigger.uppercase()) {
+            "TOUCH" -> "Step $stepNumber • Screen Tap"
+            "PROXIMITY" -> "Step $stepNumber • Wave hand over camera"
+            "FACE_DOWN" -> "Step $stepNumber • Flip phone face-down"
+            "LIGHT" -> "Step $stepNumber • Palm shadow over light sensor"
+            "MAGNETIC" -> "Step $stepNumber • PK Ring / Magnet near sensor"
+            "TILT" -> "Step $stepNumber • Tilt phone up/down"
+            "VOL_DOWN" -> "Step $stepNumber • Stealth click Volume Down"
+            "VOL_UP" -> "Step $stepNumber • Stealth click Volume Up"
+            "ANY" -> "Step $stepNumber • Any gesture or touch"
+            else -> "Step $stepNumber • Screen Tap"
+        }
+    }
+
+    private fun showTriggerPickerDialog(
+        activity: Activity,
+        stepNumber: Int,
+        onTriggerSelected: (String) -> Unit
+    ) {
+        val pickerDialog = Dialog(activity)
+        pickerDialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        pickerDialog.setContentView(R.layout.dialog_step_trigger_picker)
+
+        pickerDialog.window?.apply {
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setDimAmount(0.85f)
+        }
+
+        pickerDialog.findViewById<TextView>(R.id.pickerTitle)?.text = "Select Trigger for Step $stepNumber"
+        pickerDialog.findViewById<ImageView>(R.id.btnPickerClose)?.setOnClickListener { pickerDialog.dismiss() }
+
+        fun bindOption(viewId: Int, triggerKey: String) {
+            pickerDialog.findViewById<View>(viewId)?.setOnClickListener {
+                onTriggerSelected(triggerKey)
+                pickerDialog.dismiss()
+            }
+        }
+
+        bindOption(R.id.optTriggerTouch, "TOUCH")
+        bindOption(R.id.optTriggerProximity, "PROXIMITY")
+        bindOption(R.id.optTriggerFaceDown, "FACE_DOWN")
+        bindOption(R.id.optTriggerLight, "LIGHT")
+        bindOption(R.id.optTriggerMagnetic, "MAGNETIC")
+        bindOption(R.id.optTriggerTilt, "TILT")
+        bindOption(R.id.optTriggerVolDown, "VOL_DOWN")
+        bindOption(R.id.optTriggerAny, "ANY")
+
+        pickerDialog.show()
+    }
+
     fun showStepRevealPanelDialog(
         activity: Activity,
         settingsManager: SettingsManager,
-        onActivateMagic: (String) -> Unit
+        onActivateMagic: (String) -> Unit,
+        onStatusChanged: () -> Unit = {}
     ) {
         val dialog = Dialog(activity)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -538,36 +606,145 @@ object SecretDialogHelper {
         }
 
         val swStepRevealEnable = dialog.findViewById<SwitchMaterial>(R.id.swStepRevealEnable)
-        val etStepSequence = dialog.findViewById<EditText>(R.id.dialogEtStepSequence)
-        val btnSaveStepSequence = dialog.findViewById<Button>(R.id.dialogBtnSaveStepSequence)
         val btnClose = dialog.findViewById<ImageView>(R.id.btnCloseStepRevealDialog)
+        val btnSave = dialog.findViewById<Button>(R.id.dialogBtnSaveStepSequence)
+
+        // Presets
+        val cardPresetAllTouch = dialog.findViewById<View>(R.id.cardPresetAllTouch)
+        val cardPresetSensoryMix = dialog.findViewById<View>(R.id.cardPresetSensoryMix)
+        val cardPresetPureAir = dialog.findViewById<View>(R.id.cardPresetPureAir)
+        val cardPresetStealth = dialog.findViewById<View>(R.id.cardPresetStealth)
+
+        // Step cards & text views
+        val cardStep1 = dialog.findViewById<View>(R.id.cardStep1)
+        val cardStep2 = dialog.findViewById<View>(R.id.cardStep2)
+        val cardStep3 = dialog.findViewById<View>(R.id.cardStep3)
+        val cardStep4 = dialog.findViewById<View>(R.id.cardStep4)
+
+        val tvStep1Trigger = dialog.findViewById<TextView>(R.id.tvStep1Trigger)
+        val tvStep1Subtitle = dialog.findViewById<TextView>(R.id.tvStep1Subtitle)
+        val tvStep2Trigger = dialog.findViewById<TextView>(R.id.tvStep2Trigger)
+        val tvStep2Subtitle = dialog.findViewById<TextView>(R.id.tvStep2Subtitle)
+        val tvStep3Trigger = dialog.findViewById<TextView>(R.id.tvStep3Trigger)
+        val tvStep3Subtitle = dialog.findViewById<TextView>(R.id.tvStep3Subtitle)
+        val tvStep4Trigger = dialog.findViewById<TextView>(R.id.tvStep4Trigger)
+        val tvStep4Subtitle = dialog.findViewById<TextView>(R.id.tvStep4Subtitle)
+
+        // Parse existing 4 steps (step 5 is permanently TOUCH for Ghost Flight)
+        val rawSeq = settingsManager.stepRevealSequence.split(",").map { it.trim().uppercase() }
+        var step1 = rawSeq.getOrElse(0) { "TOUCH" }
+        var step2 = rawSeq.getOrElse(1) { "PROXIMITY" }
+        var step3 = rawSeq.getOrElse(2) { "FACE_DOWN" }
+        var step4 = rawSeq.getOrElse(3) { "LIGHT" }
 
         swStepRevealEnable.isChecked = (settingsManager.activeMagic == "STEP_REVEAL")
-        etStepSequence.setText(settingsManager.stepRevealSequence)
 
-        btnClose.setOnClickListener { dialog.dismiss() }
+        fun updateUI() {
+            tvStep1Trigger.text = getTriggerDisplayName(step1)
+            tvStep1Subtitle.text = getTriggerSubtitle(step1, 1)
 
-        swStepRevealEnable.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) onActivateMagic("STEP_REVEAL")
-            else if (settingsManager.activeMagic == "STEP_REVEAL") onActivateMagic("NONE")
+            tvStep2Trigger.text = getTriggerDisplayName(step2)
+            tvStep2Subtitle.text = getTriggerSubtitle(step2, 2)
+
+            tvStep3Trigger.text = getTriggerDisplayName(step3)
+            tvStep3Subtitle.text = getTriggerSubtitle(step3, 3)
+
+            tvStep4Trigger.text = getTriggerDisplayName(step4)
+            tvStep4Subtitle.text = getTriggerSubtitle(step4, 4)
+
+            // Update preset highlights
+            val current4 = "$step1,$step2,$step3,$step4"
+            cardPresetAllTouch.setBackgroundResource(
+                if (current4 == "TOUCH,TOUCH,TOUCH,TOUCH") R.drawable.bg_step_preset_active else R.drawable.bg_step_preset_normal
+            )
+            cardPresetSensoryMix.setBackgroundResource(
+                if (current4 == "TOUCH,PROXIMITY,FACE_DOWN,LIGHT") R.drawable.bg_step_preset_active else R.drawable.bg_step_preset_normal
+            )
+            cardPresetPureAir.setBackgroundResource(
+                if (current4 == "PROXIMITY,LIGHT,PROXIMITY,LIGHT") R.drawable.bg_step_preset_active else R.drawable.bg_step_preset_normal
+            )
+            cardPresetStealth.setBackgroundResource(
+                if (current4 == "MAGNETIC,TILT,VOL_DOWN,TOUCH") R.drawable.bg_step_preset_active else R.drawable.bg_step_preset_normal
+            )
         }
 
-        btnSaveStepSequence.setOnClickListener {
-            val seq = etStepSequence.text.toString().trim()
-            if (seq.isNotEmpty()) {
-                val cleaned = seq.split(",").map { it.trim().uppercase() }
-                val validTriggers = setOf("TOUCH", "PROXIMITY", "FACE_DOWN", "LIGHT", "MAGNETIC", "TILT", "GYRO", "VOL_UP", "VOL_DOWN", "CLAP", "FINGERPRINT", "ROTATION_3", "ANY")
-                val invalid = cleaned.filter { it !in validTriggers }
-                if (invalid.isNotEmpty()) {
-                    MagicToast.show(activity, "Invalid triggers: $invalid. Use TOUCH, PROXIMITY, etc.", isLong = true)
-                } else {
-                    settingsManager.stepRevealSequence = cleaned.joinToString(",")
-                    MagicToast.show(activity, "Sequence saved: ${settingsManager.stepRevealSequence}")
-                }
-            } else {
-                MagicToast.show(activity, "Sequence cannot be empty.")
+        updateUI()
+
+        // 1-Tap Preset Handlers
+        cardPresetAllTouch.setOnClickListener {
+            step1 = "TOUCH"; step2 = "TOUCH"; step3 = "TOUCH"; step4 = "TOUCH"
+            updateUI()
+            MagicToast.show(activity, "⚡ Selected: All Touch Preset")
+        }
+
+        cardPresetSensoryMix.setOnClickListener {
+            step1 = "TOUCH"; step2 = "PROXIMITY"; step3 = "FACE_DOWN"; step4 = "LIGHT"
+            updateUI()
+            MagicToast.show(activity, "🌪️ Selected: Sensory Mix Preset")
+        }
+
+        cardPresetPureAir.setOnClickListener {
+            step1 = "PROXIMITY"; step2 = "LIGHT"; step3 = "PROXIMITY"; step4 = "LIGHT"
+            updateUI()
+            MagicToast.show(activity, "🌊 Selected: Pure Air Preset")
+        }
+
+        cardPresetStealth.setOnClickListener {
+            step1 = "MAGNETIC"; step2 = "TILT"; step3 = "VOL_DOWN"; step4 = "TOUCH"
+            updateUI()
+            MagicToast.show(activity, "🧲 Selected: Stealth Ring Preset")
+        }
+
+        // 4 Step Card Click Handlers
+        cardStep1.setOnClickListener {
+            showTriggerPickerDialog(activity, 1) { newTrigger ->
+                step1 = newTrigger
+                updateUI()
             }
         }
+
+        cardStep2.setOnClickListener {
+            showTriggerPickerDialog(activity, 2) { newTrigger ->
+                step2 = newTrigger
+                updateUI()
+            }
+        }
+
+        cardStep3.setOnClickListener {
+            showTriggerPickerDialog(activity, 3) { newTrigger ->
+                step3 = newTrigger
+                updateUI()
+            }
+        }
+
+        cardStep4.setOnClickListener {
+            showTriggerPickerDialog(activity, 4) { newTrigger ->
+                step4 = newTrigger
+                updateUI()
+            }
+        }
+
+        swStepRevealEnable.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                onActivateMagic("STEP_REVEAL")
+            } else if (settingsManager.activeMagic == "STEP_REVEAL") {
+                onActivateMagic("NONE")
+            }
+            onStatusChanged()
+        }
+
+        btnSave.setOnClickListener {
+            val fullSequence = "$step1,$step2,$step3,$step4,TOUCH"
+            settingsManager.stepRevealSequence = fullSequence
+            if (swStepRevealEnable.isChecked) {
+                onActivateMagic("STEP_REVEAL")
+            }
+            onStatusChanged()
+            MagicToast.show(activity, "✅ Step Reveal Configuration Saved!")
+            dialog.dismiss()
+        }
+
+        btnClose.setOnClickListener { dialog.dismiss() }
 
         dialog.show()
     }

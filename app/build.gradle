@@ -34,7 +34,7 @@ android {
         buildConfigField "String", "RAZORPAY_KEY_ID", "\"${razorpayKeyId}\""
 
         // ── Google OAuth Client ID via BuildConfig ───────────────────────────
-        buildConfigField "String", "GOOGLE_OAUTH_CLIENT_ID", "\"503275768638-o9rh63phatafpkodtm7rvvhkua7eilur.apps.googleusercontent.com\""
+        buildConfigField "String", "GOOGLE_OAUTH_CLIENT_ID", "\"503275768638-k9cnspmvv1me4c70dkgl4nj60sjtqq7s.apps.googleusercontent.com\""
     }
 
     buildTypes {

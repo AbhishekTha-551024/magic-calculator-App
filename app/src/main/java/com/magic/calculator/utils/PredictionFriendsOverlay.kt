@@ -43,103 +43,77 @@ object PredictionFriendsOverlay {
             val h = mutableBitmap.height.toFloat()
             
             // ----------------------------------------------------
-            // Name & Number Splitting Logic
+            // Name & Phone Formatting Logic (Clear, Bold & Complete)
             // ----------------------------------------------------
-            val cleanName = nameText.trim()
-            val (rawNameLeft, rawNameRight) = if (cleanName.contains(" ")) {
-                val parts = cleanName.split(" ")
-                parts[0] to parts.subList(1, parts.size).joinToString(" ")
-            } else {
-                val len = cleanName.length
-                if (len <= 3) {
-                    cleanName to ""
-                } else {
-                    val mid = len / 2
-                    cleanName.substring(0, mid) to cleanName.substring(mid)
-                }
-            }
-            val nameLeft = rawNameLeft.ifEmpty { "Left" }
-            val nameRight = rawNameRight.ifEmpty { "Right" }
-
-            val cleanNum = numberText.replace(" ", "").trim()
-            val (numLeft, numRight) = if (cleanNum.startsWith("+91") && cleanNum.length >= 13) {
-                cleanNum.substring(0, 8) to cleanNum.substring(8) // E.g. +9189597 -> 777541
-            } else {
-                val len = cleanNum.length
-                if (len <= 5) {
-                    cleanNum to ""
-                } else {
-                    val mid = len / 2
-                    cleanNum.substring(0, mid) to cleanNum.substring(mid)
-                }
-            }
+            val displayName = if (nameText.isNotBlank()) nameText.trim().uppercase() else "ABHA GUPTA"
+            val displayPhone = if (numberText.isNotBlank()) numberText.trim() else "+91 98765 43210"
 
             // ----------------------------------------------------
             // Paint Setup
             // ----------------------------------------------------
-            val badgePaint = Paint().apply {
+            val badgeBgPaint = Paint().apply {
                 color = Color.WHITE
                 isAntiAlias = true
                 style = Paint.Style.FILL
             }
 
-            val textNamePaint = Paint().apply {
-                color = Color.parseColor("#1C1917") // Warm Stone-900 black charcoal
+            val textPrimaryPaint = Paint().apply {
+                color = Color.parseColor("#111827") // Ultra-crisp dark charcoal black
                 isAntiAlias = true
                 textAlign = Paint.Align.CENTER
                 typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
-                textSize = w * 0.024f
+                textSize = w * 0.027f
             }
 
-            val textNumPaint = Paint().apply {
-                color = Color.parseColor("#3F3F46") // Zinc-700 charcoal gray
+            val textSecondaryPaint = Paint().apply {
+                color = Color.parseColor("#4B5563") // Professional Slate Gray
                 isAntiAlias = true
                 textAlign = Paint.Align.CENTER
-                typeface = Typeface.create("sans-serif-condensed", Typeface.NORMAL)
+                typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
                 textSize = w * 0.020f
             }
 
             // ----------------------------------------------------
-            // 1. LEFT BADGE (Purple Kurta Person) - Originally "1120"
-            // Angle: -6 degrees. Proportional coordinates.
+            // 1. LEFT BADGE (Purple Blazer Friend)
+            // Displays: FULL NAME prominently + Phone Number below
             // ----------------------------------------------------
-            val leftCx = w * 0.410f
-            val leftCy = h * 0.306f
-            val leftBw = w * 0.15f  // Increased width
-            val leftBh = h * 0.045f // Increased height
+            val leftCx = w * 0.396f
+            val leftCy = h * 0.648f
+            val leftBw = w * 0.170f
+            val leftBh = h * 0.065f
 
             canvas.save()
-            canvas.rotate(-6.0f, leftCx, leftCy)
+            canvas.rotate(-0.5f, leftCx, leftCy)
             
-            // Draw clean white sticker covering "1120"
+            // Clean white badge sticker
             val leftRect = RectF(leftCx - leftBw * 0.5f, leftCy - leftBh * 0.5f, leftCx + leftBw * 0.5f, leftCy + leftBh * 0.5f)
-            canvas.drawRoundRect(leftRect, w * 0.005f, w * 0.005f, badgePaint)
+            canvas.drawRoundRect(leftRect, w * 0.005f, w * 0.005f, badgeBgPaint)
 
-            // Draw texts (centered nicely)
-            canvas.drawText(nameLeft, leftCx, leftCy, textNamePaint)
-            canvas.drawText(numLeft, leftCx, leftCy + leftBh * 0.35f, textNumPaint)
+            // Draw full Name as primary headline, Phone as secondary
+            canvas.drawText(displayName, leftCx, leftCy - leftBh * 0.06f, textPrimaryPaint)
+            canvas.drawText(displayPhone, leftCx, leftCy + leftBh * 0.34f, textSecondaryPaint)
             
             canvas.restore()
 
             // ----------------------------------------------------
-            // 2. RIGHT BADGE (Maroon Kurta Person) - Originally "621"
-            // Angle: 2 degrees. Proportional coordinates.
+            // 2. RIGHT BADGE (Maroon Blazer Friend)
+            // Displays: FULL PHONE NUMBER prominently + Name below
             // ----------------------------------------------------
-            val rightCx = w * 0.655f
-            val rightCy = h * 0.320f
-            val rightBw = w * 0.15f
-            val rightBh = h * 0.045f
+            val rightCx = w * 0.654f
+            val rightCy = h * 0.672f
+            val rightBw = w * 0.155f
+            val rightBh = h * 0.060f
 
             canvas.save()
-            canvas.rotate(2.0f, rightCx, rightCy)
+            canvas.rotate(0.5f, rightCx, rightCy)
             
-            // Draw clean white sticker covering "621"
+            // Clean white badge sticker
             val rightRect = RectF(rightCx - rightBw * 0.5f, rightCy - rightBh * 0.5f, rightCx + rightBw * 0.5f, rightCy + rightBh * 0.5f)
-            canvas.drawRoundRect(rightRect, w * 0.005f, w * 0.005f, badgePaint)
+            canvas.drawRoundRect(rightRect, w * 0.005f, w * 0.005f, badgeBgPaint)
 
-            // Draw texts (centered nicely)
-            canvas.drawText(nameRight, rightCx, rightCy, textNamePaint)
-            canvas.drawText(numRight, rightCx, rightCy + rightBh * 0.35f, textNumPaint)
+            // Draw full Phone Number as primary headline, Name as secondary
+            canvas.drawText(displayPhone, rightCx, rightCy - rightBh * 0.06f, textPrimaryPaint)
+            canvas.drawText(displayName, rightCx, rightCy + rightBh * 0.34f, textSecondaryPaint)
 
             canvas.restore()
 

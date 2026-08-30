@@ -10,26 +10,45 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="24dp">
+        android:padding="20dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Title & Status -->
+            <!-- Title & Close Button -->
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="14dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Step-by-Step Reveal"
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🌟 Step-by-Step Reveal"
+                        android:textColor="#FFFFFF"
+                        android:textSize="19sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="#3300FFFF"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="2dp"
+                        android:text="PRO"
+                        android:textColor="#00FFFF"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <ImageView
                     android:id="@+id/btnCloseStepRevealDialog"
@@ -37,7 +56,7 @@
                     android:layout_height="28dp"
                     android:layout_alignParentEnd="true"
                     android:src="@android:drawable/ic_menu_close_clear_cancel"
-                    app:tint="#FFFFFF" />
+                    app:tint="#88FFFFFF" />
             </RelativeLayout>
 
             <!-- Main Toggle Switch -->
@@ -45,7 +64,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="#33FFFFFF"
+                app:cardBackgroundColor="#22FFFFFF"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp">
                 <LinearLayout
@@ -53,12 +72,12 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:padding="16dp">
+                    android:padding="14dp">
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_check_list"
-                        app:tint="#FFFFFF"/>
+                        app:tint="#26D367"/>
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -66,7 +85,7 @@
                         android:layout_marginStart="12dp"
                         android:text="Enable Step Reveal"
                         android:textColor="#FFFFFF"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textStyle="bold"/>
                     <com.google.android.material.switchmaterial.SwitchMaterial
                         android:id="@+id/swStepRevealEnable"
@@ -77,57 +96,457 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Custom Sequence Configuration (Dropdown/Pre-sets or Text Edit) -->
+            <!-- ⚡ QUICK PRESETS Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Trigger Sequence Configuration"
+                android:text="⚡ QUICK PRESETS (1-Tap Selection)"
+                android:textColor="#FFB703"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <!-- Preset 1: All Touch -->
+                    <LinearLayout
+                        android:id="@+id/cardPresetAllTouch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_step_preset_normal"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="10dp"
+                        android:layout_marginEnd="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/tvPresetAllTouchTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="👆 All Touch"
+                            android:textColor="#FFFFFF"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Touch • Touch • Touch • Touch"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <!-- Preset 2: Sensory Mix -->
+                    <LinearLayout
+                        android:id="@+id/cardPresetSensoryMix"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_step_preset_normal"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="10dp"
+                        android:layout_marginEnd="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/tvPresetSensoryMixTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🌪️ Sensory Mix"
+                            android:textColor="#FFFFFF"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Touch • Wave • Flip • Shadow"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <!-- Preset 3: Pure Air -->
+                    <LinearLayout
+                        android:id="@+id/cardPresetPureAir"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_step_preset_normal"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="10dp"
+                        android:layout_marginEnd="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/tvPresetPureAirTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🌊 Pure Air"
+                            android:textColor="#FFFFFF"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Wave • Shadow • Wave • Shadow"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <!-- Preset 4: Stealth Ring -->
+                    <LinearLayout
+                        android:id="@+id/cardPresetStealth"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_step_preset_normal"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="10dp"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/tvPresetStealthTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🧲 Stealth Ring"
+                            android:textColor="#FFFFFF"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Magnet • Tilt • Vol Down • Touch"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- 🎛️ CUSTOMIZE 4 STEPS Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎛️ CUSTOMIZE 4 STEPS (Tap to Change)"
                 android:textColor="#CCFFFFFF"
                 android:textSize="12sp"
                 android:textStyle="bold" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Enter comma-separated triggers (TOUCH, PROXIMITY, FACE_DOWN, LIGHT, MAGNETIC, TILT)."
-                android:textColor="#88FFFFFF"
-                android:textSize="10sp" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="16dp">
-                <EditText
-                    android:id="@+id/dialogEtStepSequence"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:hint="TOUCH,PROXIMITY,FACE_DOWN,LIGHT,TOUCH"
-                    android:textColorHint="#66FFFFFF"
-                    android:textColor="#FFFFFF"
-                    android:gravity="center"
-                    android:background="@drawable/bg_edit_text"
-                    android:textSize="13sp"/>
-                <Button
-                    android:id="@+id/dialogBtnSaveStepSequence"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:layout_marginStart="8dp"
-                    android:text="SAVE"
-                    android:textColor="#FFFFFF"
-                    android:backgroundTint="@color/dialer_green"
-                    app:cornerRadius="12dp" />
+                android:layout_marginTop="8dp"
+                android:orientation="vertical">
+
+                <!-- Step 1 -->
+                <LinearLayout
+                    android:id="@+id/cardStep1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_step_card"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp"
+                    android:layout_marginBottom="8dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="1️⃣"
+                        android:textSize="18sp" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/tvStep1Trigger"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="👆 Screen Touch"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/tvStep1Subtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Step 1 • Reveal 1st Digit"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Change ▾"
+                        android:textColor="#00FFFF"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Step 2 -->
+                <LinearLayout
+                    android:id="@+id/cardStep2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_step_card"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp"
+                    android:layout_marginBottom="8dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="2️⃣"
+                        android:textSize="18sp" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/tvStep2Trigger"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="👋 Proximity Wave"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/tvStep2Subtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Step 2 • Reveal 2nd Digit"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Change ▾"
+                        android:textColor="#00FFFF"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Step 3 -->
+                <LinearLayout
+                    android:id="@+id/cardStep3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_step_card"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp"
+                    android:layout_marginBottom="8dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="3️⃣"
+                        android:textSize="18sp" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/tvStep3Trigger"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📱 Face Down (Flip)"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/tvStep3Subtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Step 3 • Reveal 3rd Digit"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Change ▾"
+                        android:textColor="#00FFFF"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Step 4 -->
+                <LinearLayout
+                    android:id="@+id/cardStep4"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_step_card"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp"
+                    android:layout_marginBottom="12dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="4️⃣"
+                        android:textSize="18sp" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/tvStep4Trigger"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🌗 Light / Shadow"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/tvStep4Subtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Step 4 • Reveal 4th Digit"
+                            android:textColor="#88FFFFFF"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Change ▾"
+                        android:textColor="#00FFFF"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- 🔒 FINAL STEP 5 (Locked Climax) -->
+                <LinearLayout
+                    android:id="@+id/cardStep5Locked"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_step_locked_card"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp"
+                    android:layout_marginBottom="16dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="5️⃣"
+                        android:textSize="18sp" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:orientation="vertical">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="👻 Ghost Flight Finale"
+                                android:textColor="#FFB703"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:background="#33FFB703"
+                                android:paddingHorizontal="6dp"
+                                android:paddingVertical="1dp"
+                                android:text="LOCKED 🔒"
+                                android:textColor="#FFB703"
+                                android:textSize="9sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Top Screen Tap • Animated Flying Digit Finale"
+                            android:textColor="#CCFFFFFF"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
             </LinearLayout>
 
-            <!-- Help/Guide text -->
-            <TextView
+            <!-- 🎭 Live Performance Guide Card -->
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="How it works:\n1. Enter a 5-digit number and press '=' to save and arm the trick.\n2. The display resets to '0'.\n3. Trigger the sensors in sequence to reveal each digit one-by-one!\n4. On the final step, tap the screen where you want the ghost digit to fly in."
-                android:textColor="#88FFFFFF"
-                android:textSize="11sp" />
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="#1A00FFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📖"
+                            android:textSize="18sp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="How to Perform (जादू कैसे दिखाएं)"
+                            android:textColor="#00FFFF"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:lineSpacingExtra="3dp"
+                        android:text="1️⃣ 5 Digits + AC Clear: Type any 5-digit number (e.g. 74920) on calculator and press 'AC' (Clear). The screen resets to '0' and stealthily arms the magic!\n\n2️⃣ Steps 1 to 4: Trigger your 4 chosen sensors in sequence (👆 Tap, 👋 Wave, 📱 Flip, 🌗 Shadow). Each gesture reveals digits 1 to 4 one-by-one!\n\n3️⃣ Step 5 Climax: Tap anywhere on the TOP area of the screen. The 5th digit flies in with ghost animation to complete your 5-digit number!"
+                        android:textColor="#DDFFFFFF"
+                        android:textSize="11.5sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="💡 Note: Only activates when exactly 5 digits are on display and AC is pressed. Pressing AC again will cancel/reset the trick."
+                        android:textColor="#FFB703"
+                        android:textSize="10.5sp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Save Configuration Button -->
+            <Button
+                android:id="@+id/dialogBtnSaveStepSequence"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:text="💾 SAVE CONFIGURATION"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:backgroundTint="@color/dialer_green"
+                app:cornerRadius="14dp" />
+
         </LinearLayout>
     </ScrollView>
 </androidx.cardview.widget.CardView>
