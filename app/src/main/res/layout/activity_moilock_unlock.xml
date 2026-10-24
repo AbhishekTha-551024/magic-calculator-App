@@ -54,7 +54,7 @@
         app:layout_constraintEnd_toEndOf="parent"/>
 
     <!-- Simple Confetti Overlay -->
-    <com.magic.calculator.ui.moilock.ConfettiView
+    <com.magic.calculator.feature.applock.presentation.view.ConfettiView
         android:id="@+id/confettiView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

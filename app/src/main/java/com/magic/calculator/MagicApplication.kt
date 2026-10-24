@@ -1,4 +1,4 @@
-package com.magic.calculator
+﻿package com.magic.calculator
 
 import android.app.Application
 import android.util.Log

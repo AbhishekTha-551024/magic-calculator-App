@@ -23,24 +23,35 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
-import com.magic.calculator.audio.SoundManager
-import com.magic.calculator.logic.AuthManager
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import com.magic.calculator.feature.voice_wallpaper.data.voice.StealthVoiceListener
+import com.magic.calculator.feature.voice_wallpaper.data.voice.StealthVoiceService
+import com.magic.calculator.feature.voice_wallpaper.data.wallpaper.WallpaperMagicManager
+import com.magic.calculator.core.audio.SoundManager
+import com.magic.calculator.core.logic.AuthManager
 import com.magic.calculator.databinding.ActivityMainBinding
-import com.magic.calculator.di.appContainer
-import com.magic.calculator.ui.util.MagicToast
-import com.magic.calculator.haptic.HapticManager
-import com.magic.calculator.logic.InteractiveCoachManager
-import com.magic.calculator.logic.MagicEngine
-import com.magic.calculator.logic.OnboardingManager
-import com.magic.calculator.logic.PremiumManager
-import com.magic.calculator.logic.SettingsManager
-import com.magic.calculator.logic.SubscriptionManager
-import com.magic.calculator.p2p.P2PLinkManager
-import com.magic.calculator.sensor.SensorCoordinator
-import com.magic.calculator.ui.calculator.CalculatorKeypadController
-import com.magic.calculator.ui.dialer.DialerController
-import com.magic.calculator.ui.physics.PhysicsExplosionEngine
-import com.magic.calculator.viewmodel.MagicViewModel
+import com.magic.calculator.di.AppContainer
+import com.magic.calculator.core.ui.util.MagicToast
+import com.magic.calculator.core.haptic.HapticManager
+import com.magic.calculator.core.logic.InteractiveCoachManager
+import com.magic.calculator.core.logic.MagicEngine
+import com.magic.calculator.core.logic.OnboardingManager
+import com.magic.calculator.core.logic.PremiumManager
+import com.magic.calculator.core.logic.SettingsManager
+import com.magic.calculator.core.logic.SubscriptionManager
+import com.magic.calculator.feature.p2p.presentation.P2PLinkManager
+import com.magic.calculator.feature.p2p.domain.model.P2PEventListener
+import com.magic.calculator.feature.vault.presentation.GalleryActivity
+import com.magic.calculator.feature.vault.presentation.PhotoViewerActivity
+import com.magic.calculator.feature.applock.presentation.service.MoiLockService
+import com.magic.calculator.core.sensor.SensorCoordinator
+import com.magic.calculator.core.ui.calculator.CalculatorKeypadController
+import com.magic.calculator.feature.auth.presentation.LoginActivity
+import com.magic.calculator.feature.dialer.presentation.DialerController
+import com.magic.calculator.core.ui.physics.PhysicsExplosionEngine
+import com.magic.calculator.feature.calculator.presentation.viewmodel.MagicViewModel
+import com.magic.calculator.feature.subscription.presentation.PremiumActivity
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -59,6 +70,7 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MagicViewModel by viewModels()
 
+    private val appContainer: AppContainer get() = (application as MagicApplication).appContainer
     private val settingsManager: SettingsManager by lazy { appContainer.settingsManager }
     private val soundManager: SoundManager by lazy { appContainer.soundManager }
     private val hapticManager: HapticManager by lazy { appContainer.hapticManager }
@@ -103,7 +115,7 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
             if (!PremiumManager.isUserPremium) {
                 settingsManager.appMode = 0
             } else {
-                startActivity(Intent(this, com.magic.calculator.ui.GalleryActivity::class.java))
+                startActivity(Intent(this, GalleryActivity::class.java))
                 finish()
                 return
             }
@@ -113,7 +125,7 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
             if (!PremiumManager.isUserPremium) {
                 settingsManager.appMode = 0
             } else {
-                val serviceIntent = Intent(this, com.magic.calculator.ui.moilock.MoiLockService::class.java)
+                val serviceIntent = Intent(this, MoiLockService::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     startForegroundService(serviceIntent)
                 } else {
@@ -229,7 +241,7 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
                 p2p.startListeningForRequests()
             }
         }
-        p2p.listener = object : P2PLinkManager.P2PEventListener {
+        p2p.listener = object : P2PEventListener {
             override fun onIncomingRequest(fromMagicId: String, requestDocId: String) {
                 runOnUiThread {
                     android.app.AlertDialog.Builder(this@MainActivity)
@@ -273,18 +285,41 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
     // ── SensorCoordinator Callbacks ─────────────────────────────────────────
 
     override fun onMagicTrigger(triggerType: String) {
+        if (InteractiveCoachManager.isTrainingActive) {
+            if (InteractiveCoachManager.currentStep.value != InteractiveCoachManager.TrainingStep.STEP_10_PERFORM_WAVE) {
+                return
+            }
+        }
+        if (settingsManager.isWallpaperMagicEnabled) {
+            val method = settingsManager.wallpaperTriggerMethod
+            if ((method == "PROXIMITY_WAVE" && triggerType == "PROXIMITY") ||
+                (method == "FACE_DOWN" && triggerType == "FACE_DOWN")) {
+                triggerWallpaperForce()
+                return
+            }
+        }
         triggerHardwareMagic()
     }
 
     override fun onStepRevealTrigger(triggerType: String) {
+        if (InteractiveCoachManager.isTrainingActive) return
+        if (settingsManager.isWallpaperMagicEnabled) {
+            val method = settingsManager.wallpaperTriggerMethod
+            if ((method == "PROXIMITY_WAVE" && triggerType == "PROXIMITY") ||
+                (method == "FACE_DOWN" && triggerType == "FACE_DOWN")) {
+                triggerWallpaperForce()
+            }
+        }
         viewModel.revealStepWithTrigger(triggerType)
     }
 
     override fun onLuckyTrigger(value: Int) {
+        if (InteractiveCoachManager.isTrainingActive) return
         setLuckyDisplay(value)
     }
 
     override fun onExplosionTrigger(triggerType: String) {
+        if (InteractiveCoachManager.isTrainingActive) return
         if (isRestoringOrTransitioning) return
         if (!physicsEngine.isButtonsExploded) {
             explodeButtons()
@@ -299,6 +334,7 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
     }
 
     override fun onShakeCount(count: Int) {
+        if (InteractiveCoachManager.isTrainingActive) return
         if (count >= 1) {
             if (viewModel.isWaitingForShake && count >= 3) {
                 viewModel.jumpLastDigitToEnd()
@@ -321,6 +357,14 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
     private fun triggerHardwareMagic() {
         if (settingsManager.appMode == 2) return
         if (settingsManager.activeSensorTrigger == "NONE") return
+
+        // Interactive Coach Guard: In Stage 3 live performance, magic flip MUST ONLY activate
+        // at STEP_10_PERFORM_WAVE (after user has typed '66' and pressed '=').
+        if (InteractiveCoachManager.isTrainingActive) {
+            if (InteractiveCoachManager.currentStep.value != InteractiveCoachManager.TrainingStep.STEP_10_PERFORM_WAVE) {
+                return
+            }
+        }
 
         val activeMagic = settingsManager.activeMagic
         val isPremiumTrick = activeMagic in listOf("TOXIC_TIME", "GHOST_TYPING", "REAPPEARING_RESULT", "STEP_REVEAL", "CONTACT_FORCE", "TOXIC_GALLERY")
@@ -503,6 +547,8 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
             InteractiveCoachManager.TrainingStep.STEP_8_PERFORM_66 -> {
                 viewModel.onClearClick()
                 dialerController.setDialInput("0")
+                sensorCoordinator.flipAlreadyPerformed = false
+                sensorCoordinator.resetFlipState()
                 setKeypadButtonsLock(binding.btn6)
                 highlightButton(binding.btn6)
                 showPointerAbove(binding.btn6, "👇 Type 66")
@@ -512,17 +558,21 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
                 setKeypadButtonsLock(binding.btnEqual)
                 highlightButton(binding.btnEqual)
                 showPointerAbove(binding.btnEqual, "👇 Tap =")
-                tvInstruction.text = "👉 TAP '=' TO COMPUTE 66"
+                tvInstruction.text = "👉 TAP '=' TO ARM MAGIC"
             }
             InteractiveCoachManager.TrainingStep.STEP_10_PERFORM_WAVE -> {
-                setKeypadButtonsLock(null)
-                hidePointer()
-                tvInstruction.text = "👉 WAVE YOUR HAND OVER TOP SENSOR TO FLIP 66 INTO 99!"
+                lockAllKeypadButtons()
+                resetButtonHighlights()
+                tvTitle.text = "Digital Flip Performance"
+                tvInstruction.text = "👋 Wave your hand over top proximity sensor to flip 66 into 99!"
             }
             InteractiveCoachManager.TrainingStep.TRAINING_COMPLETED -> {
                 setKeypadButtonsLock(null)
                 hidePointer()
-                tvInstruction.text = "🎉 DIGITAL FLIP MASTERED! TRAINING COMPLETE!"
+                tvTitle.text = "🎉 Training Complete!"
+                tvInstruction.text = "✨ Digital Flip Mastered! 66 flipped to 99 without touching the screen!"
+                hapticManager.magicVibrate()
+                soundManager.playMagicSwoosh()
                 coachCard.postDelayed({
                     InteractiveCoachManager.skipTraining(this)
                 }, 4000)
@@ -532,6 +582,20 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
                 hidePointer()
                 tvInstruction.text = step.instruction
             }
+        }
+    }
+
+    private fun lockAllKeypadButtons() {
+        val allButtons = listOf(
+            binding.btn0, binding.btn1, binding.btn2, binding.btn3, binding.btn4,
+            binding.btn5, binding.btn6, binding.btn7, binding.btn8, binding.btn9,
+            binding.btnDot, binding.btnAdd, binding.btnSub, binding.btnMul,
+            binding.btnDiv, binding.btnEqual, binding.btnPercent, binding.btnC,
+            binding.btnBackspace, binding.btnPlusMinus
+        )
+        allButtons.forEach { btn ->
+            btn.isEnabled = false
+            btn.alpha = 0.35f
         }
     }
 
@@ -653,7 +717,7 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         }
 
         if (currentStep == InteractiveCoachManager.TrainingStep.STEP_9_PERFORM_EQUAL) {
-            InteractiveCoachManager.setStep(InteractiveCoachManager.TrainingStep.STEP_10_PERFORM_WAVE)
+            InteractiveCoachManager.notifyEqualPressed()
         }
 
         val activeMagic = settingsManager.activeMagic
@@ -674,6 +738,9 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
                 hapticManager.buttonTick()
             }
         }
+        if (settingsManager.isWallpaperMagicEnabled && !InteractiveCoachManager.isTrainingActive) {
+            triggerWallpaperForce()
+        }
         soundManager.playButtonTick()
         hapticManager.buttonTick()
     }
@@ -683,7 +750,7 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
             hapticManager.magicVibrate()
             soundManager.playMagicSwoosh()
             settingsManager.appMode = 3
-            val intent = Intent(this, com.magic.calculator.ui.GalleryActivity::class.java)
+            val intent = Intent(this, GalleryActivity::class.java)
             startActivity(intent)
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
             finish()
@@ -693,6 +760,9 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
     }
 
     private fun handleClearClick() {
+        if (settingsManager.isWallpaperMagicEnabled && settingsManager.wallpaperTriggerMethod == "AC_CLEAR") {
+            triggerWallpaperForce()
+        }
         viewModel.onClearClick()
         equalClickCount = 0
         isRestoringOrTransitioning = false
@@ -985,6 +1055,16 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
             if (keyCode == KeyEvent.KEYCODE_VOLUME_UP)   { setLuckyDisplay(3); return true }
             if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) { setLuckyDisplay(4); return true }
         }
+
+        if (settingsManager.isWallpaperMagicEnabled) {
+            if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+                if (event?.repeatCount == 0) {
+                    toggleVolumeVoiceCapture()
+                }
+                return true
+            }
+        }
+
         val activeTrigger = settingsManager.activeSensorTrigger
         if (keyCode == KeyEvent.KEYCODE_VOLUME_UP   && activeTrigger == "VOL_UP")   { triggerHardwareMagic(); return true }
         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN && activeTrigger == "VOL_DOWN") { triggerHardwareMagic(); return true }
@@ -993,6 +1073,11 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
         if (sensorCoordinator.isLuckyActive && (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)) return true
+        if (settingsManager.isWallpaperMagicEnabled) {
+            if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+                return true
+            }
+        }
         return super.onKeyUp(keyCode, event)
     }
 
@@ -1003,6 +1088,9 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         applyTheme()
         applySubscriptionState()
         sensorCoordinator.resume()
+
+        // Stop any stale background voice service (e.g. from previous session crash)
+        StealthVoiceService.stop(this)
 
         OnboardingManager.syncFromFirestore(this) { _ ->
             runOnUiThread {
@@ -1062,7 +1150,7 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
                 val finalImageName = if (targetIndex != -1) targetImage else imageList.last()
                 val finalPosition = if (targetIndex != -1) targetIndex + 1 else imageList.size
 
-                val intent = Intent(this, com.magic.calculator.ui.PhotoViewerActivity::class.java).apply {
+                val intent = Intent(this, PhotoViewerActivity::class.java).apply {
                     putExtra("EXTRA_IMAGE_NAME", finalImageName)
                     putExtra("EXTRA_POSITION", finalPosition)
                     putExtra("EXTRA_HIDE_BARS_INITIALLY", true)
@@ -1151,15 +1239,226 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
     override fun onPause() {
         super.onPause()
         sensorCoordinator.pause()
+        if (isVolVoiceActive) {
+            isVolVoiceActive = false
+            voiceTimeoutHandler.removeCallbacks(voiceTimeoutRunnable)
+        }
+        stealthVoiceListener?.stopListening(shouldVibrate = false)
+
+        // Hand off to background service if wallpaper/voice magic is enabled.
+        // Stop it if a completely different magic (Contact Force, Digit Flip, etc.) is active.
+        val isWallpaperEnabled = settingsManager.isWallpaperMagicEnabled || settingsManager.isVoiceListenerEnabled
+        val activeMagic = settingsManager.activeMagic
+        val otherMagicActive = activeMagic != "WALLPAPER_MAGIC" && activeMagic != "NONE" && !isWallpaperEnabled
+        if (isWallpaperEnabled && !otherMagicActive) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                StealthVoiceService.start(this)
+            }
+        } else {
+            StealthVoiceService.stop(this)
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         sensorCoordinator.destroy()
+        stealthVoiceListener?.stopListening()
+        stealthVoiceListener = null
+        // Always stop the foreground mic service when the app is fully destroyed.
+        StealthVoiceService.stop(this)
+    }
+
+    private fun triggerWallpaperForce(overrideContent: String? = null) {
+        if (!settingsManager.isWallpaperMagicEnabled) return
+        val isCardMode = settingsManager.wallpaperContentType == "CARD"
+        val currentDisplay = binding.tvDisplay.text.toString().trim()
+
+        lifecycleScope.launch {
+            val target = when (settingsManager.wallpaperMagicTarget) {
+                1 -> WallpaperMagicManager.Target.HOME
+                2 -> WallpaperMagicManager.Target.LOCK
+                else -> WallpaperMagicManager.Target.BOTH
+            }
+
+            val success = if (isCardMode) {
+                val targetCard = overrideContent ?: settingsManager.forcedWallpaperCard
+                WallpaperMagicManager.applyCardWallpaper(
+                    this@MainActivity,
+                    targetCard,
+                    settingsManager.wallpaperStyleIndex,
+                    target
+                )
+            } else {
+                val targetNumber = overrideContent
+                    ?: if (currentDisplay.isNotEmpty() && currentDisplay != "0" && currentDisplay != "Error") {
+                        currentDisplay
+                    } else {
+                        settingsManager.forcedWallpaperNumber
+                    }
+                WallpaperMagicManager.applyNumberWallpaper(
+                    this@MainActivity,
+                    targetNumber,
+                    settingsManager.wallpaperStyleIndex,
+                    target
+                )
+            }
+
+            if (success) {
+                hapticManager.magicVibrate()
+                soundManager.playMagicSwoosh()
+            }
+        }
+    }
+
+    private var stealthVoiceListener: StealthVoiceListener? = null
+
+    private fun startStealthVoiceCapture() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.RECORD_AUDIO), 200)
+            return
+        }
+
+        val activeMode = settingsManager.wallpaperContentType // "CARD" or "NUMBER"
+        stealthVoiceListener?.stopListening()
+        stealthVoiceListener = StealthVoiceListener(
+            context = this,
+            mode = activeMode,
+            onCardCaptured = { card ->
+                runOnUiThread {
+                    android.util.Log.d("MainActivity", "🃏 Voice captured card: ${card.englishName}")
+                    hapticManager.magicVibrate()
+                    soundManager.playMagicSwoosh()
+                    settingsManager.forcedWallpaperCard = card.code
+
+                    if (settingsManager.isWallpaperMagicEnabled) {
+                        triggerWallpaperForce(card.code)
+                    }
+
+                    val cardDisplay = "${card.rank}${card.symbol}"
+                    viewModel.forceDisplay(cardDisplay)
+                    viewModel.saveAndStartReveal(cardDisplay)
+
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        if (settingsManager.isVoiceListenerEnabled || settingsManager.isWallpaperMagicEnabled) {
+                            startStealthVoiceCapture()
+                        }
+                    }, 2000)
+                }
+            },
+            onNumberCaptured = { spokenNumber ->
+                runOnUiThread {
+                    android.util.Log.d("MainActivity", "🎯 Voice captured number: $spokenNumber")
+                    hapticManager.magicVibrate()
+                    soundManager.playMagicSwoosh()
+                    settingsManager.forcedWallpaperNumber = spokenNumber
+
+                    if (settingsManager.isWallpaperMagicEnabled) {
+                        triggerWallpaperForce(spokenNumber)
+                    }
+
+                    viewModel.forceDisplay(spokenNumber)
+                    viewModel.saveAndStartReveal(spokenNumber)
+
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        if (settingsManager.isVoiceListenerEnabled || settingsManager.isWallpaperMagicEnabled) {
+                            startStealthVoiceCapture()
+                        }
+                    }, 2000)
+                }
+            }
+        )
+        stealthVoiceListener?.startListening()
+    }
+
+    private var isVolVoiceActive = false
+    private val voiceTimeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val voiceTimeoutRunnable = Runnable {
+        if (isVolVoiceActive) {
+            android.util.Log.d("MainActivity", "Voice capture timeout after 8s silence")
+            isVolVoiceActive = false
+            stealthVoiceListener?.stopListening(shouldVibrate = true)
+        }
+    }
+
+    private fun toggleVolumeVoiceCapture() {
+        if (isVolVoiceActive) {
+            android.util.Log.d("MainActivity", "Volume Down pressed to STOP voice recording")
+            isVolVoiceActive = false
+            voiceTimeoutHandler.removeCallbacks(voiceTimeoutRunnable)
+            stealthVoiceListener?.stopListening(shouldVibrate = true) // Single firm buzz: STOPPED
+            return
+        }
+
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.RECORD_AUDIO), 200)
+            return
+        }
+
+        isVolVoiceActive = true
+        android.util.Log.d("MainActivity", "Volume Down pressed to START voice recording session")
+
+        // 1. Immediate tactile confirmation: Magician's finger instantly feels double-pulse (CHALU HUA)
+        hapticManager.micStartFeedback()
+
+        voiceTimeoutHandler.removeCallbacks(voiceTimeoutRunnable)
+        voiceTimeoutHandler.postDelayed(voiceTimeoutRunnable, 8000)
+
+        val activeMode = settingsManager.wallpaperContentType // "CARD" or "NUMBER"
+        stealthVoiceListener?.stopListening(shouldVibrate = false)
+        stealthVoiceListener = StealthVoiceListener(
+            context = this,
+            mode = activeMode,
+            onStateChanged = { state ->
+                android.util.Log.d("MainActivity", "Vol Voice State ($activeMode): $state")
+            },
+            onErrorDetail = { err, code ->
+                runOnUiThread {
+                    android.util.Log.w("MainActivity", "Voice error in vol capture: $err ($code)")
+                    if (isVolVoiceActive) {
+                        isVolVoiceActive = false
+                        voiceTimeoutHandler.removeCallbacks(voiceTimeoutRunnable)
+                        hapticManager.micStopFeedback()
+                    }
+                }
+            },
+            onCardCaptured = { card ->
+                runOnUiThread {
+                    isVolVoiceActive = false
+                    voiceTimeoutHandler.removeCallbacks(voiceTimeoutRunnable)
+                    android.util.Log.d("MainActivity", "🃏 Secret Vol Capture Card: ${card.englishName}")
+
+                    soundManager.playMagicSwoosh()
+                    settingsManager.forcedWallpaperCard = card.code
+                    val cardDisplay = "${card.rank}${card.symbol}"
+                    viewModel.forceDisplay(cardDisplay)
+                    binding.tvDisplay.text = cardDisplay
+
+                    triggerWallpaperForce(card.code)
+                    stealthVoiceListener?.stopListening(shouldVibrate = false)
+                }
+            },
+            onNumberCaptured = { spokenNumber ->
+                runOnUiThread {
+                    isVolVoiceActive = false
+                    voiceTimeoutHandler.removeCallbacks(voiceTimeoutRunnable)
+                    android.util.Log.d("MainActivity", "🎯 Secret Vol Capture: $spokenNumber")
+
+                    soundManager.playMagicSwoosh()
+                    settingsManager.forcedWallpaperNumber = spokenNumber
+                    viewModel.forceDisplay(spokenNumber)
+                    binding.tvDisplay.text = spokenNumber
+
+                    triggerWallpaperForce(spokenNumber)
+                    stealthVoiceListener?.stopListening(shouldVibrate = false)
+                }
+            }
+        )
+        stealthVoiceListener?.startListening()
     }
 
     private fun executeP2PCommand(command: String) {
         if (settingsManager.appMode == 2) return
+        if (InteractiveCoachManager.isTrainingActive) return
 
         runOnUiThread {
             when {

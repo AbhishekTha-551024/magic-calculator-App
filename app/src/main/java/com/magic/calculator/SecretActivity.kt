@@ -23,12 +23,19 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.magic.calculator.databinding.ActivitySecretBinding
-import com.magic.calculator.di.appContainer
-import com.magic.calculator.logic.PinManager
-import com.magic.calculator.logic.PremiumManager
-import com.magic.calculator.logic.SettingsManager
-import com.magic.calculator.ui.dialogs.SecretDialogHelper
-import com.magic.calculator.ui.util.MagicToast
+import com.magic.calculator.di.AppContainer
+import com.magic.calculator.core.logic.PinManager
+import com.magic.calculator.core.logic.PremiumManager
+import com.magic.calculator.feature.subscription.presentation.PremiumActivity
+import com.magic.calculator.core.logic.SettingsManager
+import com.magic.calculator.core.logic.SubscriptionManager
+import com.magic.calculator.core.logic.InteractiveCoachManager
+import com.magic.calculator.core.logic.AppIconManager
+import com.magic.calculator.core.ui.util.MagicToast
+import com.magic.calculator.feature.secret.presentation.dialog.SecretDialogHelper
+import com.magic.calculator.feature.applock.presentation.service.MoiLockService
+import com.magic.calculator.feature.applock.presentation.receiver.MoiDeviceAdminReceiver
+import com.magic.calculator.feature.p2p.presentation.P2PLinkManager
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
@@ -41,6 +48,7 @@ import kotlin.math.sqrt
 class SecretActivity : AppCompatActivity(), SensorEventListener {
 
     private lateinit var binding: ActivitySecretBinding
+    private val appContainer: AppContainer get() = (application as MagicApplication).appContainer
     private val settingsManager: SettingsManager by lazy { appContainer.settingsManager }
     private lateinit var sensorManager: SensorManager
 
@@ -88,16 +96,16 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         val btnSkip = binding.layoutSecretCoach.btnCoachSkip
         btnSkip.visibility = View.GONE
         btnSkip.setOnClickListener {
-            com.magic.calculator.logic.InteractiveCoachManager.skipTraining(this)
+            InteractiveCoachManager.skipTraining(this)
             coachCard.visibility = View.GONE
         }
 
-        com.magic.calculator.logic.InteractiveCoachManager.currentStep.observe(this) { step ->
-            if (step == com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.OFF ||
-                step == com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.TRAINING_COMPLETED ||
-                step == com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_8_PERFORM_66 ||
-                step == com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_9_PERFORM_EQUAL ||
-                step == com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_10_PERFORM_WAVE) {
+        InteractiveCoachManager.currentStep.observe(this) { step ->
+            if (step == InteractiveCoachManager.TrainingStep.OFF ||
+                step == InteractiveCoachManager.TrainingStep.TRAINING_COMPLETED ||
+                step == InteractiveCoachManager.TrainingStep.STEP_8_PERFORM_66 ||
+                step == InteractiveCoachManager.TrainingStep.STEP_9_PERFORM_EQUAL ||
+                step == InteractiveCoachManager.TrainingStep.STEP_10_PERFORM_WAVE) {
                 coachCard.visibility = View.GONE
                 hideSecretPointer()
                 setSecretLockState(null)
@@ -107,13 +115,13 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                 tvInstruction.text = step.instruction
 
                 when (step) {
-                    com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_5_CONFIG_FLIP -> {
+                    InteractiveCoachManager.TrainingStep.STEP_5_CONFIG_FLIP -> {
                         setSecretLockState(binding.cardFlip)
                         binding.cardFlip.animate().scaleX(1.04f).scaleY(1.04f).setDuration(300).start()
                         showSecretPointerAbove(binding.swFlip, "👇 Turn ON Digital Flip")
                         binding.tabMagic.smoothScrollTo(0, 0)
                     }
-                    com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_6_CONFIG_PROXIMITY -> {
+                    InteractiveCoachManager.TrainingStep.STEP_6_CONFIG_PROXIMITY -> {
                         setSecretLockState(binding.swTrigProximity)
                         binding.cardFlip.animate().scaleX(1.0f).scaleY(1.0f).setDuration(200).start()
                         binding.swTrigProximity.animate().scaleX(1.08f).scaleY(1.08f).setDuration(300).start()
@@ -122,14 +130,16 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                             binding.tabMagic.smoothScrollTo(0, binding.swTrigProximity.top)
                         }
                     }
-                    com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_6B_OPEN_EDIT_TAB -> {
+                    InteractiveCoachManager.TrainingStep.STEP_6B_OPEN_EDIT_TAB -> {
                         binding.swTrigProximity.animate().scaleX(1.0f).scaleY(1.0f).setDuration(200).start()
                         setSecretLockState(binding.btnEditParams)
                         binding.btnEditParams.animate().scaleX(1.25f).scaleY(1.25f).setDuration(300).start()
                         showSecretPointerBelow(binding.btnEditParams, "👇 Tap Edit")
                     }
-                    com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_6C_SAVE_FLIP_PARAMS -> {
+                    InteractiveCoachManager.TrainingStep.STEP_6C_SAVE_FLIP_PARAMS -> {
                         binding.btnEditParams.animate().scaleX(1.0f).scaleY(1.0f).setDuration(200).start()
+                        binding.etFlipTrigger.setText("66")
+                        binding.etFlipResult.setText("99")
                         setSecretLockState(binding.btnSaveFlip)
                         binding.btnSaveFlip.animate().scaleX(1.06f).scaleY(1.06f).setDuration(300).start()
                         showSecretPointerAbove(binding.btnSaveFlip, "👇 Tap Save Flip (66 -> 99)")
@@ -137,13 +147,13 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                             binding.tabEdit.smoothScrollTo(0, binding.btnSaveFlip.top)
                         }
                     }
-                    com.magic.calculator.logic.InteractiveCoachManager.TrainingStep.STEP_7_TAP_BACK -> {
+                    InteractiveCoachManager.TrainingStep.STEP_7_TAP_BACK -> {
                         binding.btnSaveFlip.animate().scaleX(1.0f).scaleY(1.0f).setDuration(200).start()
                         val navBackView = binding.bottomNav.findViewById<View>(R.id.nav_back)
                         if (navBackView != null) {
                             setSecretLockState(navBackView)
                             navBackView.animate()?.scaleX(1.2f)?.scaleY(1.2f)?.setDuration(400)?.start()
-                            showSecretPointerAbove(navBackView, "👇 Tap Back to Perform!")
+                            showSecretPointerAbove(navBackView, "👇 Tap Calc to Perform!")
                         }
                     }
                     else -> {
@@ -166,7 +176,8 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
             findViewById<View>(R.id.cardExplosionSetting),
             findViewById<View>(R.id.cardToxicSetting),
             findViewById<View>(R.id.cardGhostSetting),
-            findViewById<View>(R.id.cardRecoverySetting)
+            findViewById<View>(R.id.cardRecoverySetting),
+            findViewById<View>(R.id.cardWallpaperMagicSetting)
         ).filterNotNull()
 
         val sensorSwitches = listOf(
@@ -190,9 +201,12 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
             }
             binding.btnEditParams.isEnabled = true
             binding.btnEditParams.alpha = 1.0f
+            binding.btnSaveFlip.isEnabled = true
+            binding.btnSaveFlip.alpha = 1.0f
             for (i in 0 until binding.bottomNav.menu.size()) {
                 binding.bottomNav.menu.getItem(i).isEnabled = true
             }
+            binding.bottomNav.alpha = 1.0f
         } else {
             magicCards.forEach { card ->
                 val isTarget = (card == activeTarget || card.findViewById<View>(activeTarget.id) != null)
@@ -212,11 +226,15 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
             binding.btnEditParams.isEnabled = (activeTarget == binding.btnEditParams)
             binding.btnEditParams.alpha = if (activeTarget == binding.btnEditParams) 1.0f else 0.28f
 
+            binding.btnSaveFlip.isEnabled = (activeTarget == binding.btnSaveFlip)
+            binding.btnSaveFlip.alpha = if (activeTarget == binding.btnSaveFlip) 1.0f else 0.28f
+
             val isNavBackTarget = (activeTarget.id == R.id.nav_back)
             for (i in 0 until binding.bottomNav.menu.size()) {
                 val item = binding.bottomNav.menu.getItem(i)
-                item.isEnabled = if (isNavBackTarget) item.itemId == R.id.nav_back else true
+                item.isEnabled = isNavBackTarget && (item.itemId == R.id.nav_back)
             }
+            binding.bottomNav.alpha = if (isNavBackTarget) 1.0f else 0.35f
         }
     }
 
@@ -452,6 +470,17 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
             }
         }
 
+        findViewById<View>(R.id.cardWallpaperMagicSetting)?.setOnClickListener {
+            checkPremiumAndRun {
+                SecretDialogHelper.showWallpaperMagicConfigDialog(
+                    activity = this,
+                    settingsManager = settingsManager,
+                    onActivateMagic = { key -> activateMagic(key) },
+                    onStatusChanged = { updateWallpaperMagicIconStatus() }
+                )
+            }
+        }
+
         findViewById<View>(R.id.cardSubmitIdeaSetting)?.setOnClickListener {
             SecretDialogHelper.showSubmitIdeaDialog(this)
         }
@@ -476,11 +505,6 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         binding.swTrigFingerprint.isChecked = (trig == "FINGERPRINT")
         binding.swTrigRotate5.isChecked = (trig == "ROTATION_3")
 
-        binding.btnEditParams.setOnClickListener {
-            hideAllTabs()
-            binding.tabEdit.visibility = View.VISIBLE
-            binding.tvTabTitle.text = "Edit Parameters"
-        }
         binding.btnSettings.setOnClickListener { binding.tabSettingsOverlay.visibility = View.VISIBLE }
         binding.btnCloseSettings.setOnClickListener {
             saveSystemSettings()
@@ -548,7 +572,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         } else {
             if (settingsManager.appMode == 4) {
                 settingsManager.appMode = 0
-                val serviceIntent = Intent(this, com.magic.calculator.ui.moilock.MoiLockService::class.java)
+                val serviceIntent = Intent(this, MoiLockService::class.java)
                 try { stopService(serviceIntent) } catch (e: Exception) { e.printStackTrace() }
             }
         }
@@ -556,6 +580,12 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         // Handle P2P Mutual Exclusivity
         if (key != "P2P_LINK") {
             settingsManager.isP2PEnabled = false
+        }
+
+        // Handle Wallpaper & Voice Mutual Exclusivity
+        if (key != "WALLPAPER_MAGIC") {
+            settingsManager.isWallpaperMagicEnabled = false
+            settingsManager.isVoiceListenerEnabled = false
         }
 
         val allSwitches = listOf(
@@ -596,6 +626,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         updateToxicTimeIconStatus()
         updateGhostTypingIconStatus()
         updateGhostRecoveryIconStatus()
+        updateWallpaperMagicIconStatus()
         updateSimpleMagicUIColors()
     }
 
@@ -619,6 +650,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
             sensorSection?.visibility = View.GONE
         }
         updateSimpleMagicUIColors()
+        updateWallpaperMagicIconStatus()
     }
 
     private fun clearAllTriggerSwitchesSilently() {
@@ -647,7 +679,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         binding.swFlip.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 activateMagic("DIGIT_FLIP")
-                com.magic.calculator.logic.InteractiveCoachManager.notifyFlipSwitched(true)
+                InteractiveCoachManager.notifyFlipSwitched(true)
             } else if (settingsManager.activeMagic == "DIGIT_FLIP") {
                 activateMagic("NONE")
             }
@@ -683,7 +715,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                 if (isChecked) {
                     updateSensorTrigger(type)
                     if (type == "PROXIMITY") {
-                        com.magic.calculator.logic.InteractiveCoachManager.notifyProximitySwitched(true)
+                        InteractiveCoachManager.notifyProximitySwitched(true)
                     }
                 } else if (settingsManager.activeSensorTrigger == type) {
                     updateSensorTrigger("NONE")
@@ -724,10 +756,10 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                 ),
                 "#00E5FF",
                 onPracticeClick = {
-                    settingsManager.activeMagic = "DIGITAL_FLIP"
+                    settingsManager.activeMagic = "DIGIT_FLIP"
                     settingsManager.activeSensorTrigger = "PROXIMITY"
                     saveSystemSettings()
-                    com.magic.calculator.logic.InteractiveCoachManager.startDigitalFlipPractice()
+                    InteractiveCoachManager.startDigitalFlipPractice()
                     val intent = Intent(this, MainActivity::class.java).apply {
                         addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                     }
@@ -818,10 +850,12 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
             MagicToast.show(this, "Phone Magic Saved!")
         }
         binding.btnSaveFlip.setOnClickListener {
-            settingsManager.customFlipTrigger = binding.etFlipTrigger.text.toString()
-            settingsManager.customFlipResult = binding.etFlipResult.text.toString()
+            val trigger = binding.etFlipTrigger.text.toString().ifEmpty { "66" }
+            val result = binding.etFlipResult.text.toString().ifEmpty { "99" }
+            settingsManager.customFlipTrigger = trigger
+            settingsManager.customFlipResult = result
             MagicToast.show(this, "Digital Flip Saved!")
-            com.magic.calculator.logic.InteractiveCoachManager.notifyFlipSaved()
+            InteractiveCoachManager.notifyFlipSaved()
         }
     }
 
@@ -830,10 +864,16 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
             hideAllTabs()
             binding.tabEdit.visibility = View.VISIBLE
             binding.tvTabTitle.text = "Edit Parameters"
-            com.magic.calculator.logic.InteractiveCoachManager.notifyEditTabOpened()
+            InteractiveCoachManager.notifyEditTabOpened()
         }
 
         binding.bottomNav.setOnItemSelectedListener { item ->
+            if (InteractiveCoachManager.isTrainingActive) {
+                val current = InteractiveCoachManager.currentStep.value
+                if (current != InteractiveCoachManager.TrainingStep.STEP_7_TAP_BACK || item.itemId != R.id.nav_back) {
+                    return@setOnItemSelectedListener false
+                }
+            }
             hideAllTabs()
             when (item.itemId) {
                 R.id.nav_magic -> {
@@ -850,7 +890,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
                     binding.tvTabTitle.text = "Theme"
                 }
                 R.id.nav_back -> {
-                    com.magic.calculator.logic.InteractiveCoachManager.notifyBackToCalc()
+                    InteractiveCoachManager.notifyBackToCalc()
                     saveSystemSettings()
                     val intent = Intent(this, MainActivity::class.java).apply {
                         addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -864,21 +904,21 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun setupAppIconTab() {
-        binding.cardIconCalculator.setOnClickListener { selectAppIcon(com.magic.calculator.logic.AppIconManager.AppIconType.CALCULATOR) }
-        binding.cardIconCalendar.setOnClickListener { selectAppIcon(com.magic.calculator.logic.AppIconManager.AppIconType.CALENDAR) }
-        binding.cardIconNotes.setOnClickListener { selectAppIcon(com.magic.calculator.logic.AppIconManager.AppIconType.NOTES) }
-        binding.cardIconSettings.setOnClickListener { selectAppIcon(com.magic.calculator.logic.AppIconManager.AppIconType.SETTINGS) }
-        binding.cardIconMessages.setOnClickListener { selectAppIcon(com.magic.calculator.logic.AppIconManager.AppIconType.MESSAGES) }
+        binding.cardIconCalculator.setOnClickListener { selectAppIcon(AppIconManager.AppIconType.CALCULATOR) }
+        binding.cardIconCalendar.setOnClickListener { selectAppIcon(AppIconManager.AppIconType.CALENDAR) }
+        binding.cardIconNotes.setOnClickListener { selectAppIcon(AppIconManager.AppIconType.NOTES) }
+        binding.cardIconSettings.setOnClickListener { selectAppIcon(AppIconManager.AppIconType.SETTINGS) }
+        binding.cardIconMessages.setOnClickListener { selectAppIcon(AppIconManager.AppIconType.MESSAGES) }
         updateAppIconSelectionUI()
     }
 
-    private fun selectAppIcon(iconType: com.magic.calculator.logic.AppIconManager.AppIconType) {
-        if (iconType != com.magic.calculator.logic.AppIconManager.AppIconType.CALCULATOR && !PremiumManager.isUserPremium) {
+    private fun selectAppIcon(iconType: AppIconManager.AppIconType) {
+        if (iconType != AppIconManager.AppIconType.CALCULATOR && !PremiumManager.isUserPremium) {
             startActivity(Intent(this, PremiumActivity::class.java))
             MagicToast.show(this, "Premium required to unlock ${iconType.title} disguise icon!")
             return
         }
-        val success = com.magic.calculator.logic.AppIconManager.setAppIcon(this, iconType)
+        val success = AppIconManager.setAppIcon(this, iconType)
         if (success) {
             MagicToast.show(this, "Launcher icon updated to ${iconType.title}!")
             updateAppIconSelectionUI()
@@ -888,7 +928,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     }
 
     private fun updateAppIconSelectionUI() {
-        val current = com.magic.calculator.logic.AppIconManager.getActiveAppIcon(this)
+        val current = AppIconManager.getActiveAppIcon(this)
 
         val activeCardBg = Color.parseColor("#252538")
         val inactiveCardBg = Color.parseColor("#1A1A24")
@@ -896,19 +936,19 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         val inactiveCheckColor = Color.parseColor("#55FFFFFF")
 
         val allCards = listOf(
-            binding.cardIconCalculator to com.magic.calculator.logic.AppIconManager.AppIconType.CALCULATOR,
-            binding.cardIconCalendar to com.magic.calculator.logic.AppIconManager.AppIconType.CALENDAR,
-            binding.cardIconNotes to com.magic.calculator.logic.AppIconManager.AppIconType.NOTES,
-            binding.cardIconSettings to com.magic.calculator.logic.AppIconManager.AppIconType.SETTINGS,
-            binding.cardIconMessages to com.magic.calculator.logic.AppIconManager.AppIconType.MESSAGES
+            binding.cardIconCalculator to AppIconManager.AppIconType.CALCULATOR,
+            binding.cardIconCalendar to AppIconManager.AppIconType.CALENDAR,
+            binding.cardIconNotes to AppIconManager.AppIconType.NOTES,
+            binding.cardIconSettings to AppIconManager.AppIconType.SETTINGS,
+            binding.cardIconMessages to AppIconManager.AppIconType.MESSAGES
         )
 
         val allChecks = listOf(
-            binding.imgIconCalculatorCheck to com.magic.calculator.logic.AppIconManager.AppIconType.CALCULATOR,
-            binding.imgIconCalendarCheck to com.magic.calculator.logic.AppIconManager.AppIconType.CALENDAR,
-            binding.imgIconNotesCheck to com.magic.calculator.logic.AppIconManager.AppIconType.NOTES,
-            binding.imgIconSettingsCheck to com.magic.calculator.logic.AppIconManager.AppIconType.SETTINGS,
-            binding.imgIconMessagesCheck to com.magic.calculator.logic.AppIconManager.AppIconType.MESSAGES
+            binding.imgIconCalculatorCheck to AppIconManager.AppIconType.CALCULATOR,
+            binding.imgIconCalendarCheck to AppIconManager.AppIconType.CALENDAR,
+            binding.imgIconNotesCheck to AppIconManager.AppIconType.NOTES,
+            binding.imgIconSettingsCheck to AppIconManager.AppIconType.SETTINGS,
+            binding.imgIconMessagesCheck to AppIconManager.AppIconType.MESSAGES
         )
 
         for ((card, type) in allCards) {
@@ -1178,7 +1218,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     private fun checkAndRequestMoiLockPermissions() {
         var needsPermission = false
         val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as android.app.admin.DevicePolicyManager
-        val componentName = android.content.ComponentName(this, com.magic.calculator.ui.moilock.MoiDeviceAdminReceiver::class.java)
+        val componentName = android.content.ComponentName(this, MoiDeviceAdminReceiver::class.java)
         if (!dpm.isAdminActive(componentName)) {
             val intent = Intent(android.app.admin.DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
                 putExtra(android.app.admin.DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
@@ -1241,7 +1281,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     private fun updateP2PIconStatus() {
         val imgIcon = findViewById<android.widget.ImageView>(R.id.imgP2PLinkIconLeft) ?: return
         val txtTitle = findViewById<TextView>(R.id.txtP2PLinkTitleLeft) ?: return
-        val p2p = com.magic.calculator.p2p.P2PLinkManager.getInstance()
+        val p2p = P2PLinkManager.getInstance()
         if (p2p.isConnected || (settingsManager.isP2PEnabled && settingsManager.activeMagic == "P2P_LINK")) {
             imgIcon.setColorFilter(Color.parseColor("#00E5FF"))
             txtTitle.setTextColor(Color.parseColor("#00E5FF"))
@@ -1369,7 +1409,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     }
 
     fun applySubscriptionState() {
-        val isPremium = com.magic.calculator.logic.SubscriptionManager.isPremiumUser(this) || PremiumManager.isUserPremium
+        val isPremium = SubscriptionManager.isPremiumUser(this) || PremiumManager.isUserPremium
         val iconRes = if (isPremium) R.drawable.ic_settings else R.drawable.ic_lock
         val tintColor = if (isPremium) "#88FFFFFF" else "#FFD700"
         val statusIds = listOf(
@@ -1381,7 +1421,8 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
             R.id.imgExplosionStatus,
             R.id.imgToxicStatus,
             R.id.imgGhostStatus,
-            R.id.imgRecoveryStatus
+            R.id.imgRecoveryStatus,
+            R.id.imgWallpaperMagicStatus
         )
         for (id in statusIds) {
             val img = findViewById<android.widget.ImageView>(id) ?: continue
@@ -1390,10 +1431,19 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         }
 
         updatePremiumLockUI()
+        updateWallpaperMagicIconStatus()
+    }
+
+    private fun updateWallpaperMagicIconStatus() {
+        val isEnabled = (settingsManager.activeMagic == "WALLPAPER_MAGIC") || settingsManager.isWallpaperMagicEnabled || settingsManager.isVoiceListenerEnabled
+        val tint = if (isEnabled) Color.parseColor("#00FFFF") else Color.parseColor("#88FFFFFF")
+        findViewById<android.widget.ImageView>(R.id.imgWallpaperMagicIconLeft)?.setColorFilter(tint)
+        findViewById<TextView>(R.id.txtWallpaperMagicTitleLeft)?.setTextColor(tint)
+        findViewById<android.widget.ImageView>(R.id.imgWallpaperMagicStatus)?.setColorFilter(tint)
     }
 
     private fun updatePremiumLockUI() {
-        val isPremium = com.magic.calculator.logic.SubscriptionManager.isPremiumUser(this) || PremiumManager.isUserPremium
+        val isPremium = SubscriptionManager.isPremiumUser(this) || PremiumManager.isUserPremium
 
         // 1. Theme Tab options: Remove 🔒 PRO when subscribed
         binding.rbDialer.text = if (isPremium) "Phone Dialer (Stealth Mode)" else "Phone Dialer 🔒 PRO (Stealth Mode)"

@@ -1,0 +1,556 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardBackgroundColor="#141419"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="0dp">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="22dp">
+
+            <!-- Title Bar -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🖼️"
+                        android:textSize="22sp" />
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Dynamic Wallpaper Magic"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Zero-Touch Voice &amp; System Wallpaper Force"
+                            android:textColor="#00FFFF"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/btnCloseWallpaperConfig"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    app:tint="#FFFFFF" />
+            </RelativeLayout>
+
+            <!-- Switch: Enable Wallpaper Magic -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_step_card"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="14dp"
+                android:layout_marginBottom="10dp">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Enable Wallpaper Force"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Changes device wallpaper on calculation or voice"
+                        android:textColor="#88FFFFFF"
+                        android:textSize="11sp" />
+                </LinearLayout>
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swEnableWallpaperMagic"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:useMaterialThemeColors="true" />
+            </LinearLayout>
+
+            <!-- Switch: Enable Stealth Voice Listener -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_step_card"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="14dp"
+                android:layout_marginBottom="16dp">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🎙️ Stealth Voice Listener"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Listens to spoken number (Zero-touch hands-free)"
+                        android:textColor="#00FF66"
+                        android:textSize="11sp" />
+                </LinearLayout>
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swEnableVoiceListener"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:useMaterialThemeColors="true" />
+            </LinearLayout>
+
+            <!-- Section: Trigger Method -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚡ TRIGGER ACTION (जादू कब एक्टिवेट हो)"
+                android:textColor="#00FFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <RadioGroup
+                android:id="@+id/rgWallpaperTriggerMethod"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="16dp">
+                <RadioButton
+                    android:id="@+id/rbTrigVolHold"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🔊 Secret Volume Button (वॉल्यूम बटन दबाकर ट्रिगर)"
+                    android:textColor="#FFFFFF"
+                    android:buttonTint="#00FFFF"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:checked="true" />
+                <RadioButton
+                    android:id="@+id/rbTrigFaceDown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📱 Flip Down / Face Down (फोन टेबल पर उल्टा रखने पर)"
+                    android:textColor="#FFFFFF"
+                    android:buttonTint="#00FFFF"
+                    android:textSize="12sp" />
+                <RadioButton
+                    android:id="@+id/rbTrigMagnetic"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🧲 Magnetic Ring (जादुई रिंग पास लाने पर)"
+                    android:textColor="#FFFFFF"
+                    android:buttonTint="#00FFFF"
+                    android:textSize="12sp" />
+            </RadioGroup>
+
+            <!-- Section: Target Screen -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎯 TARGET WALLPAPER SCREEN"
+                android:textColor="#00FFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <RadioGroup
+                android:id="@+id/rgWallpaperTarget"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+                <RadioButton
+                    android:id="@+id/rbTargetBoth"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Both"
+                    android:textColor="#FFFFFF"
+                    android:buttonTint="#00FFFF"
+                    android:textSize="12sp"
+                    android:checked="true" />
+                <RadioButton
+                    android:id="@+id/rbTargetHome"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Home"
+                    android:textColor="#FFFFFF"
+                    android:buttonTint="#00FFFF"
+                    android:textSize="12sp" />
+                <RadioButton
+                    android:id="@+id/rbTargetLock"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Lock"
+                    android:textColor="#FFFFFF"
+                    android:buttonTint="#00FFFF"
+                    android:textSize="12sp" />
+            </RadioGroup>
+
+            <!-- Section: Visual Style -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎨 WALLPAPER VISUAL THEME"
+                android:textColor="#00FFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <RadioGroup
+                android:id="@+id/rgWallpaperStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+                <RadioButton
+                    android:id="@+id/rbStyleNeon"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Cyber Neon"
+                    android:textColor="#FFFFFF"
+                    android:buttonTint="#00FFFF"
+                    android:textSize="11sp"
+                    android:checked="true" />
+                <RadioButton
+                    android:id="@+id/rbStyleGold"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Luxury Gold"
+                    android:textColor="#FFFFFF"
+                    android:buttonTint="#FFD700"
+                    android:textSize="11sp" />
+                <RadioButton
+                    android:id="@+id/rbStyleCosmic"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Cosmic"
+                    android:textColor="#FFFFFF"
+                    android:buttonTint="#F72585"
+                    android:textSize="11sp" />
+            </RadioGroup>
+
+            <!-- Section: Prediction Mode (Number vs 52 Playing Card) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✨ PREDICTION MAGIC TYPE (जादू का प्रकार)"
+                android:textColor="#00FFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <RadioGroup
+                android:id="@+id/rgPredictionContentType"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+                <RadioButton
+                    android:id="@+id/rbModeNumber"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🔢 Numbers (Active ✅)"
+                    android:textColor="#FFFFFF"
+                    android:buttonTint="#00FFFF"
+                    android:textSize="12sp"
+                    android:checked="true" />
+                <RadioButton
+                    android:id="@+id/rbModeCard"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🔒 52 Cards (Coming Soon)"
+                    android:textColor="#55FFFFFF"
+                    android:buttonTint="#55FFFFFF"
+                    android:textSize="11sp"
+                    android:enabled="false"
+                    android:clickable="false" />
+            </RadioGroup>
+
+            <!-- Test Number Input -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilForcedNumber"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                app:boxBackgroundColor="#1AFFFFFF"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxStrokeColor="#00FFFF"
+                app:hintTextColor="#00FFFF">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etForcedWallpaperNumber"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Target Number (e.g. 74, 63, 36)"
+                    android:inputType="number"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Test Card Input (Visible in Card Mode) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilForcedCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                android:visibility="gone"
+                app:boxBackgroundColor="#1AFFFFFF"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxStrokeColor="#FFD700"
+                app:hintTextColor="#FFD700">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etForcedWallpaperCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Target Card (e.g. QH, AS, KD, 10C)"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Action Buttons Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="14dp">
+
+                <Button
+                    android:id="@+id/btnTestApplyWallpaper"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="🚀 Test Apply"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#2563EB"
+                    app:cornerRadius="12dp" />
+
+                <Button
+                    android:id="@+id/btnTestVoiceListen"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="🎙️ Test Voice"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#7C3AED"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnGoogleSpeechSheet"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="⚡ Google Voice Mic Popup (Instant Test)"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:backgroundTint="#059669"
+                app:cornerRadius="12dp"
+                android:layout_marginBottom="14dp" />
+
+            <!-- Live Voice Diagnostic Console Card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp"
+                app:cardBackgroundColor="#0D1117"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="6dp">
+                        <TextView
+                            android:id="@+id/tvVoiceMicStatus"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="🎙️ Mic: Idle / Ready"
+                            android:textColor="#10B981"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                        <ProgressBar
+                            android:id="@+id/pbVoiceAudioLevel"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="80dp"
+                            android:layout_height="6dp"
+                            android:max="25"
+                            android:progress="0"
+                            android:progressTint="#00FFFF" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="HEARD WORDS (क्या सुनाई दिया):"
+                        android:textColor="#6B7280"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="2dp" />
+
+                    <TextView
+                        android:id="@+id/tvVoiceRawTranscript"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="[Waiting for speech... speak into phone]"
+                        android:textColor="#F3F4F6"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:background="#161B22"
+                        android:padding="8dp"
+                        android:layout_marginBottom="6dp" />
+
+                    <TextView
+                        android:id="@+id/tvVoiceExtractedResult"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="🎯 Matched Number: None"
+                        android:textColor="#00FFFF"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvVoiceDiagInfo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="💡 Tap 'Test Voice' and speak (e.g. 63, 74, तिरसठ)"
+                        android:textColor="#9CA3AF"
+                        android:textSize="10sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Background Battery Exemption Button (For Xiaomi / Realme / Samsung) -->
+            <Button
+                android:id="@+id/btnWallpaperBatteryExemption"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="🔋 Allow Unrestricted Background (Fix Mic Sleep)"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:backgroundTint="#B45309"
+                app:cornerRadius="12dp"
+                android:layout_marginBottom="10dp" />
+
+            <!-- Reset Wallpaper Button -->
+            <Button
+                android:id="@+id/btnResetWallpaper"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="🔄 Restore Default Wallpaper"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:backgroundTint="#33333F"
+                app:cornerRadius="12dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Performance Guide Card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="#1A00FFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📖 Live Performance Routine (Zero-Touch)"
+                        android:textColor="#00FFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="6dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:lineSpacingExtra="3dp"
+                        android:text="1️⃣ Place phone on table. Ask spectator to speak any 2-digit number out loud (e.g. '74').\n\n2️⃣ Stealth listener captures '74' and updates phone wallpaper in 0.1s in the background!\n\n3️⃣ Ask spectator to press the power button or minimize the app to reveal their number shining on the wallpaper!"
+                        android:textColor="#DDFFFFFF"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Save Configuration Button -->
+            <Button
+                android:id="@+id/btnSaveWallpaperConfig"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:text="💾 SAVE CONFIGURATION"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:backgroundTint="@color/dialer_green"
+                app:cornerRadius="14dp" />
+
+        </LinearLayout>
+    </ScrollView>
+</androidx.cardview.widget.CardView>

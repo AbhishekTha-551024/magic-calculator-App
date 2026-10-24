@@ -147,7 +147,35 @@
                     android:ellipsize="middle"
                     android:singleLine="true" />
             </LinearLayout>
+
+            <!-- Validity / Expiry Row -->
+            <LinearLayout
+                android:id="@+id/rowPaymentValidity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Valid Until: "
+                    android:textColor="#88FFFFFF"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/txtPaymentValidity"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="24 Nov 2026, 07:30 PM"
+                    android:textColor="#10B981"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
+
 
         <!-- Date Timestamp Row -->
         <LinearLayout
