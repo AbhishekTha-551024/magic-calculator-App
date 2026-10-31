@@ -10,8 +10,13 @@ import android.hardware.SensorManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.os.SystemClock
+import android.util.Log
 import androidx.core.content.ContextCompat
+import com.magic.calculator.core.audio.MicArbiter
+import com.magic.calculator.core.audio.MicPermission
 import com.magic.calculator.core.logic.PremiumManager
+import com.magic.calculator.core.logic.SettingsBus
 import com.magic.calculator.core.logic.SettingsManager
 import kotlinx.coroutines.*
 import kotlin.math.abs
@@ -76,12 +81,49 @@ class SensorCoordinator(
         private const val FLIP_DEBOUNCE_MS = 600L
         private const val FLIP_STALL_TIMEOUT_MS = 800L
         private const val REQUIRED_FLIPS = 3
+
+        private const val TAG = "SensorCoordinator"
+
+        /** How long the clap loop waits for the mic to free up before giving up. */
+        private const val MIC_WAIT_TIMEOUT_MS = 8_000L
+
+        /** Back-off before re-trying after the audio hardware refused to initialise. */
+        private const val MIC_RETRY_DELAY_MS = 1_500L
+
+        /** Raw PCM amplitude (0..32767) treated as a clap or finger snap. */
+        private const val CLAP_AMPLITUDE_THRESHOLD = 18000
+
+        /**
+         * `RecognitionListener.onRmsChanged` level treated as a clap when a voice session owns the
+         * mic. NOT interchangeable with [CLAP_AMPLITUDE_THRESHOLD]: the speech service reports a
+         * logarithmic dB-ish scale (roughly 0..10 for speech), while the PCM loop compares against
+         * a 16-bit sample. Calibrate this on-device by watching the "external clap" debug line.
+         */
+        private const val CLAP_RMS_THRESHOLD = 7f
+
+        /** Minimum spacing between two clap triggers, on either source. */
+        private const val CLAP_DEBOUNCE_MS = 1500L
     }
 
     // â”€â”€ Audio Trigger State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Mic ownership is granted by MicArbiter so the clap loop can never run at the same
+    // time as SpeechRecognizer in StealthVoiceListener. That collision produced
+    // SpeechRecognizer.ERROR_AUDIO, which Google reports as "cannot record".
+    @Volatile
     private var audioRecord: AudioRecord? = null
     private var audioJob: Job? = null
+
+    /** Written from the clap loop's worker thread, cancelled from the main thread. */
+    @Volatile
+    private var micWaitJob: Job? = null
+    /** Ownership proof; read by the loop's `finally` on its worker thread. */
+    @Volatile
+    private var micToken: MicArbiter.Token? = null
+
+    /** Read on Main, cleared from the loop's worker thread — must be visible across both. */
+    @Volatile
     private var isAudioMonitoring = false
+    private var lastExternalClapMs = 0L
 
     fun resume() {
         lastGyroTimeNano = 0L
@@ -285,22 +327,117 @@ class SensorCoordinator(
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
+    /**
+     * Opens the clap / snap amplitude loop.
+     *
+     * The microphone is only taken when CLAP is actually the selected trigger, and only through
+     * [MicArbiter]. Before this, `resume()` opened an `AudioRecord` on every `onResume` regardless
+     * of settings, which starved Google's speech service of the mic.
+     */
     fun startAudioMonitoring() {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) !=
-            PackageManager.PERMISSION_GRANTED) return
+        if (isAudioMonitoring) return
+        cancelMicWait()
+
+        if (!MicPermission.has(context)) return
+
+        val trigger = settingsManager.activeSensorTrigger
+        if (trigger != "CLAP") {
+            Log.d(TAG, "Mic not opened: activeSensorTrigger=$trigger")
+            return
+        }
+
+        val token = MicArbiter.tryAcquire(MicArbiter.Owner.CLAP_LOOP)
+        if (token == null) {
+            Log.d(TAG, "Mic busy (${MicArbiter.describe()}); waiting instead of fighting for it")
+            micWaitJob = scope.launch(Dispatchers.Default) {
+                val deferred = MicArbiter.awaitAcquire(MicArbiter.Owner.CLAP_LOOP, MIC_WAIT_TIMEOUT_MS)
+                when {
+                    deferred == null -> Log.d(TAG, "Gave up waiting for the mic after ${MIC_WAIT_TIMEOUT_MS}ms")
+                    !isActive || settingsManager.activeSensorTrigger != "CLAP" ->
+                        MicArbiter.release(deferred)
+                    else -> withContext(Dispatchers.Main) { openClapLoop(deferred) }
+                }
+            }
+            return
+        }
+
+        openClapLoop(token)
+    }
+
+    fun stopAudioMonitoring() {
+        isAudioMonitoring = false
+        cancelMicWait()
+        audioJob?.cancel()
+        audioJob = null
+        // Released here, synchronously, rather than in the coroutine's finally block: the next
+        // owner (usually ASR) must never race a half-dead input stream.
+        releaseMicHardware()
+    }
+
+    /**
+     * Clap detection fed by someone else's microphone — normally the speech recognizer inside
+     * [com.magic.calculator.feature.voice_wallpaper.data.voice.VoiceCaptureManager].
+     *
+     * While ASR owns the mic this loop must not open an `AudioRecord`, so the recognizer's
+     * `onRmsChanged` levels are handed here instead. Ignored while [startAudioMonitoring] already
+     * has the mic, because that loop fires the trigger itself and the two would double-dispatch.
+     *
+     * @param level the raw value from `RecognitionListener.onRmsChanged` (see [CLAP_RMS_THRESHOLD]).
+     */
+    fun onExternalAudioLevel(level: Float) {
+        if (isAudioMonitoring) return
+        if (!SettingsBus.isClapTrigger()) return
+        if (level < CLAP_RMS_THRESHOLD) return
+
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastExternalClapMs < CLAP_DEBOUNCE_MS) return
+        lastExternalClapMs = now
+        Log.d(TAG, "Clap via shared mic: level=$level")
+        scope.launch(Dispatchers.Main) { listener.onMagicTrigger("CLAP") }
+    }
+
+    private fun openClapLoop(token: MicArbiter.Token) {
+        if (isAudioMonitoring) {
+            MicArbiter.release(token)
+            return
+        }
+        micToken = token
         isAudioMonitoring = true
         audioJob?.cancel()
         audioJob = scope.launch(Dispatchers.Default) {
+            var record: AudioRecord? = null
             try {
                 val bufferSize = AudioRecord.getMinBufferSize(
                     44100, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-                val record = AudioRecord(
+                if (bufferSize <= 0) {
+                    Log.e(TAG, "No usable AudioRecord buffer size ($bufferSize); clap trigger off")
+                    return@launch
+                }
+                record = AudioRecord(
                     MediaRecorder.AudioSource.MIC, 44100,
                     AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize)
+                if (record.state != AudioRecord.STATE_INITIALIZED) {
+                    // Android denies a second concurrent capture: something else still owns the mic.
+                    // The finally block hands the token back, then we try again on a delay instead
+                    // of leaving the clap trigger dead until the next onResume.
+                    Log.w(TAG, "AudioRecord would not initialise — mic is held elsewhere, retrying")
+                    scheduleMicRetry()
+                    return@launch
+                }
                 audioRecord = record
                 val buffer = ShortArray(bufferSize)
                 record.startRecording()
-                while (isAudioMonitoring && isActive) {
+                while (isAudioMonitoring && isActive && audioRecord === record) {
+                    // Stop early if the magician switched to a non-mic trigger.
+                    if (settingsManager.activeSensorTrigger != "CLAP") {
+                        Log.d(TAG, "Trigger changed to ${settingsManager.activeSensorTrigger}; releasing mic")
+                        break
+                    }
+                    // Stop early if speech recognition needs the mic — ASR outranks this loop.
+                    if (MicArbiter.shouldYield(MicArbiter.Owner.CLAP_LOOP)) {
+                        Log.d(TAG, "Yielding mic to a higher-priority owner (ASR)")
+                        break
+                    }
                     val read = record.read(buffer, 0, bufferSize)
                     if (read > 0) {
                         var max = 0
@@ -308,7 +445,7 @@ class SensorCoordinator(
                             val value = abs(buffer[i].toInt())
                             if (value > max) max = value
                         }
-                        if (settingsManager.activeSensorTrigger == "CLAP" && max > 18000) {
+                        if (max > CLAP_AMPLITUDE_THRESHOLD) {
                             withContext(Dispatchers.Main) {
                                 listener.onMagicTrigger("CLAP")
                             }
@@ -318,29 +455,47 @@ class SensorCoordinator(
                     delay(100)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "Clap monitoring stopped: ${e.message}")
             } finally {
-                try {
-                    audioRecord?.stop()
-                    audioRecord?.release()
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
-                audioRecord = null
+                // Only tear down if this loop is still the recognised owner. A cancelled loop can
+                // resume late (blocking `read()`, or the clap dispatch on Main) and land here after
+                // a newer loop already holds a different token and record — releasing *those* would
+                // leave the mic unowned while a live AudioRecord keeps recording.
+                if (micToken === token) releaseMicHardware()
             }
         }
     }
 
-    fun stopAudioMonitoring() {
+    private fun releaseMicHardware() {
         isAudioMonitoring = false
-        audioJob?.cancel()
-        audioJob = null
-        try {
-            audioRecord?.stop()
-            audioRecord?.release()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        val record = audioRecord
         audioRecord = null
+        if (record != null) {
+            try { record.stop() } catch (_: Exception) {}
+            try { record.release() } catch (_: Exception) {}
+        }
+        val token = micToken
+        micToken = null
+        if (token != null) MicArbiter.release(token)
+    }
+
+    /**
+     * Re-arms the clap loop after `AudioRecord` refused to initialise.
+     *
+     * Without this the trigger stays dead until the next `onResume`, which on a phone whose mic is
+     * briefly held by the speech service means the magician's clap does nothing. It reuses the
+     * [micWaitJob] slot and runs on Main, so [stopAudioMonitoring] always cancels it cleanly.
+     */
+    private fun scheduleMicRetry() {
+        scope.launch(Dispatchers.Main) {
+            micWaitJob = coroutineContext[Job]
+            delay(MIC_RETRY_DELAY_MS)
+            if (isActive && settingsManager.activeSensorTrigger == "CLAP") startAudioMonitoring()
+        }
+    }
+
+    private fun cancelMicWait() {
+        micWaitJob?.cancel()
+        micWaitJob = null
     }
 }

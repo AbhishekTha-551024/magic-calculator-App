@@ -9,7 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
-import android.database.ContentObserver
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
@@ -22,12 +21,13 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.SystemClock
-import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.magic.calculator.R
 import com.magic.calculator.core.haptic.HapticManager
 import com.magic.calculator.core.logic.SettingsManager
+import com.magic.calculator.core.logic.VoiceFeaturePolicy
+import com.magic.calculator.di.appContainer
 import com.magic.calculator.feature.voice_wallpaper.data.wallpaper.WallpaperMagicManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,28 +48,37 @@ import kotlinx.coroutines.launch
  */
 class StealthVoiceService : Service() {
 
-    private var voiceListener: StealthVoiceListener? = null
+    /**
+     * Voice capture is delegated to the process-wide [VoiceCaptureManager] so the locked-screen
+     * path, the calculator's own volume-down path, and the Wallpaper & Voice Force test dialog can
+     * never hold two `SpeechRecognizer` clients at once.
+     */
+    private val captureManager by lazy { appContainer.voiceCaptureManager }
+    private var lockedSession: VoiceCaptureManager.SessionHandle? = null
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private lateinit var settingsManager: SettingsManager
-    private val hapticManager by lazy { HapticManager(this) }
-    private var mediaSession: MediaSession? = null
-    private var volumeObserver: ContentObserver? = null
 
-    private var isRecordingSession = false
+    /** Shared with the rest of the process — a service-local copy would drift from [SettingsBus]. */
+    private val settingsManager: SettingsManager by lazy { appContainer.settingsManager }
+
+    /** Same instance the Activity uses, so haptic settings changes apply here too. */
+    private val hapticManager: HapticManager by lazy { appContainer.hapticManager }
+    private var mediaSession: MediaSession? = null
+
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val sessionTimeoutRunnable = Runnable {
-        if (isRecordingSession) {
-            Log.d(TAG, "Recording session timeout after silence while locked")
-            isRecordingSession = false
-            hapticManager.micStopFeedback()
-            stopVoiceListening()
-        }
-    }
 
     companion object {
         private const val TAG = "StealthVoiceService"
         private const val NOTIFICATION_ID = 9021
         private const val CHANNEL_ID = "stealth_voice_service_channel"
+
+        /**
+         * Collapse window for duplicate broadcasts of one physical key press.
+         *
+         * Deliberately short: the ContentObserver that used to double-report is gone, and a magician
+         * who taps volume down twice in quick succession (start capture, then stop it) must have the
+         * second tap honoured.
+         */
+        private const val TRIGGER_DEBOUNCE_MS = 350L
 
         const val ACTION_START = "com.magic.calculator.voice.ACTION_START"
         const val ACTION_STOP = "com.magic.calculator.voice.ACTION_STOP"
@@ -103,7 +112,6 @@ class StealthVoiceService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        settingsManager = SettingsManager(this)
         createNotificationChannel()
     }
 
@@ -119,11 +127,8 @@ class StealthVoiceService : Service() {
             return START_NOT_STICKY
         }
 
-        // Guard: only run if wallpaper magic is enabled
-        val isWallpaperEnabled = settingsManager.isWallpaperMagicEnabled || settingsManager.isVoiceListenerEnabled
-        val activeMagic = settingsManager.activeMagic
-        val otherMagicActive = activeMagic != "WALLPAPER_MAGIC" && activeMagic != "NONE" && !isWallpaperEnabled
-        if (!isWallpaperEnabled || otherMagicActive) {
+        // Guard: only run if wallpaper magic is enabled (single predicate, see VoiceFeaturePolicy)
+        if (!VoiceFeaturePolicy.shouldRun(settingsManager)) {
             Log.d(TAG, "Stopping StealthVoiceService: not enabled or different magic active")
             cleanupVolumeTriggers()
             stopForeground(STOP_FOREGROUND_REMOVE)
@@ -152,7 +157,6 @@ class StealthVoiceService : Service() {
         // Setup Volume Down listener while in background / locked (mic is OFF until pressed!)
         startSilentAudio()
         setupMediaSession()
-        setupVolumeObserver()
         setupVolumeBroadcastReceiver()
 
         return START_NOT_STICKY
@@ -274,11 +278,37 @@ class StealthVoiceService : Service() {
                 volumeChangeReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context?, intent: Intent?) {
                         if (intent?.action == "android.media.VOLUME_CHANGED_ACTION") {
+                            val stream = intent.getIntExtra(
+                                "android.media.EXTRA_VOLUME_STREAM_TYPE", -1
+                            )
                             val newVol = intent.getIntExtra("android.media.EXTRA_VOLUME_STREAM_VALUE", -1)
                             val prevVol = intent.getIntExtra("android.media.EXTRA_PREV_VOLUME_STREAM_VALUE", -1)
-                            Log.d(TAG, "VOLUME_CHANGED_ACTION: prev=$prevVol, new=$newVol")
+                            Log.d(TAG, "VOLUME_CHANGED_ACTION: stream=$stream prev=$prevVol new=$newVol")
+
+                            // Only the media stream counts as the magician's cue. Our own
+                            // beep-muting touches STREAM_NOTIFICATION / STREAM_SYSTEM, and
+                            // accepting those used to start a second capture session from
+                            // inside the first one — a self-sustaining trigger loop.
+                            if (stream != AudioManager.STREAM_MUSIC) return
+
+                            if (captureManager.isInsideSelfDuckWindow()) {
+                                Log.d(TAG, "Ignoring volume change inside self-duck window")
+                                return
+                            }
+
                             if (newVol != -1 && prevVol != -1 && newVol < prevVol) {
                                 Log.d(TAG, "Volume Down detected via VOLUME_CHANGED_ACTION broadcast")
+
+                                // Put media volume back where the magician found it: the cue is the key
+                                // press, not the level, and without this the stream walks to zero over a
+                                // set. The restore is an *increase*, so it never re-enters this branch.
+                                try {
+                                    (getSystemService(Context.AUDIO_SERVICE) as? AudioManager)?.setStreamVolume(
+                                        AudioManager.STREAM_MUSIC, prevVol,
+                                        AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE
+                                    )
+                                } catch (_: Exception) {}
+
                                 mainHandler.post {
                                     onVolumeDownLockedTrigger()
                                 }
@@ -287,10 +317,12 @@ class StealthVoiceService : Service() {
                     }
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    // VOLUME_CHANGED_ACTION is a protected system broadcast: nothing else can send
+                    // it, so an exported receiver only widens the app's attack surface.
                     registerReceiver(
                         volumeChangeReceiver,
                         IntentFilter("android.media.VOLUME_CHANGED_ACTION"),
-                        Context.RECEIVER_EXPORTED
+                        Context.RECEIVER_NOT_EXPORTED
                     )
                 } else {
                     registerReceiver(
@@ -298,47 +330,10 @@ class StealthVoiceService : Service() {
                         IntentFilter("android.media.VOLUME_CHANGED_ACTION")
                     )
                 }
-                Log.d(TAG, "VOLUME_CHANGED_ACTION broadcast receiver registered with RECEIVER_EXPORTED")
+                Log.d(TAG, "VOLUME_CHANGED_ACTION broadcast receiver registered with RECEIVER_NOT_EXPORTED")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to register volume broadcast receiver: ${e.message}", e)
-        }
-    }
-
-    private fun setupVolumeObserver() {
-        try {
-            val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
-            var lastMusic = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-            var lastRing = audioManager.getStreamVolume(AudioManager.STREAM_RING)
-            var lastNotif = audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION)
-            volumeObserver?.let { contentResolver.unregisterContentObserver(it) }
-            volumeObserver = object : ContentObserver(mainHandler) {
-                override fun onChange(selfChange: Boolean) {
-                    super.onChange(selfChange)
-                    val currentMusic = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-                    val currentRing = audioManager.getStreamVolume(AudioManager.STREAM_RING)
-                    val currentNotif = audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION)
-                    if (currentMusic < lastMusic || currentRing < lastRing || currentNotif < lastNotif) {
-                        Log.d(TAG, "Volume decreased via ContentObserver: music($currentMusic<$lastMusic) or ring($currentRing<$lastRing)")
-                        onVolumeDownLockedTrigger()
-                        // Restore music volume so it doesn't decrease to 0 over multiple performances
-                        if (currentMusic < lastMusic) {
-                            try { audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, lastMusic, 0) } catch (_: Exception) {}
-                        }
-                    }
-                    lastMusic = currentMusic
-                    lastRing = currentRing
-                    lastNotif = currentNotif
-                }
-            }
-            contentResolver.registerContentObserver(
-                Settings.System.CONTENT_URI,
-                true,
-                volumeObserver!!
-            )
-            Log.d(TAG, "Volume ContentObserver registered for locked screen monitoring")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to register volume ContentObserver: ${e.message}", e)
         }
     }
 
@@ -352,12 +347,6 @@ class StealthVoiceService : Service() {
             Log.w(TAG, "Error releasing MediaSession: ${e.message}")
         }
         try {
-            volumeObserver?.let { contentResolver.unregisterContentObserver(it) }
-            volumeObserver = null
-        } catch (e: Exception) {
-            Log.w(TAG, "Error unregistering VolumeObserver: ${e.message}")
-        }
-        try {
             volumeChangeReceiver?.let { unregisterReceiver(it) }
             volumeChangeReceiver = null
         } catch (e: Exception) {
@@ -369,53 +358,39 @@ class StealthVoiceService : Service() {
 
     private fun onVolumeDownLockedTrigger() {
         val now = SystemClock.elapsedRealtime()
-        if (now - lastTriggerTime < 1200L) {
+        if (now - lastTriggerTime < TRIGGER_DEBOUNCE_MS) {
             return // Debounce duplicate events from multiple triggers
         }
         lastTriggerTime = now
 
-        if (isRecordingSession) {
+        val session = lockedSession
+        if (session != null) {
             // Already recording -> Magician clicked Volume Down again to CANCEL / STOP!
             Log.d(TAG, "Volume Down pressed while recording -> Cancelling")
-            isRecordingSession = false
-            mainHandler.removeCallbacks(sessionTimeoutRunnable)
+            lockedSession = null
             hapticManager.micStopFeedback() // Single buzz: STOPPED
-            stopVoiceListening()
+            captureManager.release(session)
             return
         }
 
         // Not recording -> Magician clicked Volume Down to START recording session!
-        Log.d(TAG, "Volume Down pressed while locked -> STARTING voice capture session")
-        isRecordingSession = true
-        hapticManager.micStartFeedback() // Double pulse: CHALU HUA (BUZZ - BUZZ)
-
-        mainHandler.removeCallbacks(sessionTimeoutRunnable)
-        mainHandler.postDelayed(sessionTimeoutRunnable, 8000)
-
         startVoiceListeningSession()
     }
 
     private fun startVoiceListeningSession() {
         val activeMode = settingsManager.wallpaperContentType
-        voiceListener?.stopListening(shouldVibrate = false)
-        voiceListener = StealthVoiceListener(
-            context = this,
+        Log.d(TAG, "Volume Down pressed while locked -> STARTING voice capture session")
+        hapticManager.micStartFeedback() // Double pulse: CHALU HUA (BUZZ - BUZZ)
+
+        val handle = captureManager.requestSession(
+            caller = VoiceCaptureManager.Caller.LOCKED_VOLUME,
             mode = activeMode,
-            onErrorDetail = { err, code ->
-                mainHandler.post {
-                    Log.w(TAG, "Voice error while locked: $err ($code)")
-                    if (isRecordingSession) {
-                        isRecordingSession = false
-                        mainHandler.removeCallbacks(sessionTimeoutRunnable)
-                        hapticManager.micStopFeedback()
-                        stopVoiceListening()
-                    }
-                }
+            timeoutMs = VoiceCaptureManager.DEFAULT_TIMEOUT_MS,
+            onStateChanged = { state ->
+                Log.d(TAG, "Locked voice state ($activeMode): $state")
             },
             onCardCaptured = { card ->
                 mainHandler.post {
-                    isRecordingSession = false
-                    mainHandler.removeCallbacks(sessionTimeoutRunnable)
                     Log.d(TAG, "🃏 Captured card while locked: ${card.englishName}")
 
                     settingsManager.forcedWallpaperCard = card.code
@@ -434,13 +409,10 @@ class StealthVoiceService : Service() {
                             )
                         }
                     }
-                    stopVoiceListening()
                 }
             },
             onNumberCaptured = { capturedNumber ->
                 mainHandler.post {
-                    isRecordingSession = false
-                    mainHandler.removeCallbacks(sessionTimeoutRunnable)
                     Log.d(TAG, "🎯 Captured number while locked: $capturedNumber")
 
                     settingsManager.wallpaperContentType = "NUMBER"
@@ -461,16 +433,30 @@ class StealthVoiceService : Service() {
                             )
                         }
                     }
-                    stopVoiceListening()
                 }
+            },
+            onEnded = { reason ->
+                // The manager already hands the mic back and buzzes for terminal errors, so this
+                // only resets the service's own state. ERROR_NO_MATCH never reaches here any more:
+                // silence keeps listening until the timeout, exactly as the magician expects.
+                // Cleared for every reason, REPLACED included: a replaced handle is dead, and
+                // keeping it turned the magician's next volume-down into a no-op "stop" press.
+                lockedSession = null
+                Log.d(TAG, "Locked voice session ended: $reason")
             }
         )
-        voiceListener?.startListening()
+
+        if (handle == null) {
+            lockedSession = null
+            hapticManager.micStopFeedback()
+        } else {
+            lockedSession = handle
+        }
     }
 
     private fun stopVoiceListening() {
-        voiceListener?.stopListening(shouldVibrate = false)
-        voiceListener = null
+        lockedSession?.let { captureManager.release(it) }
+        lockedSession = null
     }
 
     private fun createNotificationChannel() {

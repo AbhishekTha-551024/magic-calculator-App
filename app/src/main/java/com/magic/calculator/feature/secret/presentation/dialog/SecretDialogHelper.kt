@@ -28,6 +28,7 @@ import com.magic.calculator.feature.vault.presentation.PhotoViewerActivity
 import com.magic.calculator.feature.applock.presentation.MoiLockActivity
 import com.magic.calculator.feature.applock.presentation.service.MoiLockService
 import com.magic.calculator.feature.applock.presentation.receiver.MoiDeviceAdminReceiver
+import com.magic.calculator.core.audio.MicPermission
 import com.magic.calculator.core.logic.AuthManager
 import com.magic.calculator.core.logic.PinManager
 import com.magic.calculator.core.logic.PremiumManager
@@ -41,7 +42,8 @@ import android.content.pm.PackageManager
 import android.speech.RecognizerIntent
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.magic.calculator.feature.voice_wallpaper.data.voice.StealthVoiceListener
+import com.magic.calculator.di.appContainer
+import com.magic.calculator.feature.voice_wallpaper.data.voice.VoiceCaptureManager
 import com.magic.calculator.feature.voice_wallpaper.data.voice.VoiceCardExtractor
 import com.magic.calculator.feature.voice_wallpaper.data.voice.VoiceNumberExtractor
 import com.magic.calculator.feature.voice_wallpaper.data.wallpaper.WallpaperMagicManager
@@ -1561,27 +1563,32 @@ object SecretDialogHelper {
         val tvVoiceExtractedResult = dialog.findViewById<TextView>(R.id.tvVoiceExtractedResult)
         val tvVoiceDiagInfo = dialog.findViewById<TextView>(R.id.tvVoiceDiagInfo)
 
-        var voiceListener: StealthVoiceListener? = null
+        val captureManager = activity.appContainer.voiceCaptureManager
+        var testSession: VoiceCaptureManager.SessionHandle? = null
         var isTestListening = false
 
+        fun resetTestVoiceUi() {
+            isTestListening = false
+            testSession = null
+            btnTestVoice?.text = "🎙️ Test Voice"
+            tvVoiceMicStatus?.text = "⚪ Idle"
+            tvVoiceMicStatus?.setTextColor(Color.parseColor("#94A3B8"))
+            pbVoiceAudioLevel?.progress = 0
+        }
+
         btnTestVoice?.setOnClickListener {
-            if (isTestListening) {
-                isTestListening = false
-                voiceListener?.stopListening()
-                btnTestVoice.text = "🎙️ Test Voice"
-                tvVoiceMicStatus?.text = "⚪ Idle"
-                tvVoiceMicStatus?.setTextColor(Color.parseColor("#94A3B8"))
-                pbVoiceAudioLevel?.progress = 0
+            testSession?.let { session ->
+                captureManager.release(session)
+                resetTestVoiceUi()
                 return@setOnClickListener
             }
 
-            if (ContextCompat.checkSelfPermission(activity, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.RECORD_AUDIO), 200)
+            if (!MicPermission.ensure(activity)) {
                 return@setOnClickListener
             }
 
             isTestListening = true
-            btnTestVoice.text = "🛑 Stop Listening"
+            btnTestVoice?.text = "🛑 Stop Listening"
             tvVoiceMicStatus?.text = "🎙️ Connecting..."
             tvVoiceMicStatus?.setTextColor(Color.parseColor("#00FFFF"))
             tvVoiceRawTranscript?.text = "Waiting for speech... speak into mic"
@@ -1589,10 +1596,11 @@ object SecretDialogHelper {
             tvVoiceDiagInfo?.text = "Microphone initialized."
 
             val selectedMode = if (rbModeCard?.isChecked == true) "CARD" else "NUMBER"
-            voiceListener?.stopListening()
-            voiceListener = StealthVoiceListener(
-                context = activity,
+            // timeoutMs = 0: the magician drives this one by hand, so silence must not end it.
+            testSession = captureManager.requestSession(
+                caller = VoiceCaptureManager.Caller.DIALOG_TEST,
                 mode = selectedMode,
+                timeoutMs = 0L,
                 onStateChanged = { state ->
                     activity.runOnUiThread {
                         tvVoiceMicStatus?.text = state
@@ -1678,14 +1686,40 @@ object SecretDialogHelper {
                             WallpaperMagicManager.applyNumberWallpaper(activity, detectedNum, style, target)
                         }
                     }
+                },
+                onEnded = { reason ->
+                    activity.runOnUiThread {
+                        if (reason == VoiceCaptureManager.EndReason.CAPTURED) {
+                            testSession = null
+                        } else {
+                            resetTestVoiceUi()
+                            tvVoiceDiagInfo?.text = when (reason) {
+                                VoiceCaptureManager.EndReason.PERMISSION_DENIED ->
+                                    "❌ Microphone permission revoked — grant it and tap Test Voice again."
+                                VoiceCaptureManager.EndReason.MIC_BUSY ->
+                                    "❌ Mic busy — another app holds the microphone. Close it and tap again."
+                                VoiceCaptureManager.EndReason.REJECTED ->
+                                    "⚠️ Another capture is using the microphone right now."
+                                else -> "⚪ Session closed"
+                            }
+                        }
+                    }
                 }
             )
-            voiceListener?.startListening()
+            if (testSession == null) {
+                resetTestVoiceUi()
+                tvVoiceMicStatus?.text = "⚪ Blocked"
+                tvVoiceDiagInfo?.text = "⚠️ Another capture owns the microphone — stop it first."
+            }
         }
 
         val btnGoogleSpeechSheet = dialog.findViewById<Button>(R.id.btnGoogleSpeechSheet)
         btnGoogleSpeechSheet?.setOnClickListener {
             try {
+                // The stock Google sheet is a third SpeechRecognizer client in this process. Hand
+                // our own session back first so it never competes with ours for the microphone.
+                testSession?.let { captureManager.release(it) }
+                resetTestVoiceUi()
                 val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                     putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak any number (e.g. 63, 74, बहत्तर)...")
@@ -1773,12 +1807,14 @@ object SecretDialogHelper {
 
             onStatusChanged()
             MagicToast.show(activity, "💾 Wallpaper Magic Configuration Saved!")
-            voiceListener?.stopListening()
+            testSession?.let { captureManager.release(it) }
+            testSession = null
             dialog.dismiss()
         }
 
         dialog.setOnDismissListener {
-            voiceListener?.stopListening()
+            testSession?.let { captureManager.release(it) }
+            testSession = null
         }
 
         dialog.show()

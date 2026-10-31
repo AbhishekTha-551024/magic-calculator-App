@@ -23,10 +23,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
-import com.magic.calculator.feature.voice_wallpaper.data.voice.StealthVoiceListener
 import com.magic.calculator.feature.voice_wallpaper.data.voice.StealthVoiceService
+import com.magic.calculator.feature.voice_wallpaper.data.voice.VoiceCaptureManager
 import com.magic.calculator.feature.voice_wallpaper.data.wallpaper.WallpaperMagicManager
 import com.magic.calculator.core.audio.SoundManager
 import com.magic.calculator.core.logic.AuthManager
@@ -38,7 +40,10 @@ import com.magic.calculator.core.logic.InteractiveCoachManager
 import com.magic.calculator.core.logic.MagicEngine
 import com.magic.calculator.core.logic.OnboardingManager
 import com.magic.calculator.core.logic.PremiumManager
+import com.magic.calculator.core.audio.MicPermission
+import com.magic.calculator.core.logic.SettingsBus
 import com.magic.calculator.core.logic.SettingsManager
+import com.magic.calculator.core.logic.VoiceFeaturePolicy
 import com.magic.calculator.core.logic.SubscriptionManager
 import com.magic.calculator.feature.p2p.presentation.P2PLinkManager
 import com.magic.calculator.feature.p2p.domain.model.P2PEventListener
@@ -202,6 +207,34 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         physicsEngine = PhysicsExplosionEngine(soundManager, hapticManager)
         sensorCoordinator = SensorCoordinator(this, settingsManager, lifecycleScope, this)
         setupP2PListener()
+        observeMicSharing()
+    }
+
+    /**
+     * Mic cooperation between the clap loop and speech recognition.
+     *
+     * - Levels from a live capture session are forwarded to the sensor coordinator, so a clap or
+     *   finger snap still fires while ASR holds the microphone instead of a second `AudioRecord`
+     *   competing for it.
+     * - The trigger setting is observed rather than polled, so switching to or away from CLAP in
+     *   SecretActivity takes effect the moment it is saved.
+     */
+    private fun observeMicSharing() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    appContainer.voiceCaptureManager.rms.collect { level ->
+                        sensorCoordinator.onExternalAudioLevel(level)
+                    }
+                }
+                launch {
+                    SettingsBus.activeSensorTrigger.collect { trigger ->
+                        if (trigger == "CLAP") sensorCoordinator.startAudioMonitoring()
+                        else sensorCoordinator.stopAudioMonitoring()
+                    }
+                }
+            }
+        }
     }
 
     private fun setupControllers() {
@@ -1048,6 +1081,9 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
     private fun applySettings() {
         soundManager.setVolume(settingsManager.soundVolume)
         hapticManager.intensityScale = settingsManager.hapticIntensity / 100f
+        // Reading republishes it, so the clap loop sees the stored trigger even when this process
+        // never wrote it (fresh launch, or the change was made on another SettingsManager instance).
+        SettingsBus.publishActiveSensorTrigger(settingsManager.activeSensorTrigger)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -1087,10 +1123,12 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         applySettings()
         applyTheme()
         applySubscriptionState()
-        sensorCoordinator.resume()
 
-        // Stop any stale background voice service (e.g. from previous session crash)
+        // Stop any stale background voice service (e.g. from previous session crash) BEFORE the
+        // sensor loop takes the microphone. The old order grabbed the mic and only then released
+        // the service's SpeechRecognizer, starving it on every return to the app.
         StealthVoiceService.stop(this)
+        sensorCoordinator.resume()
 
         OnboardingManager.syncFromFirestore(this) { _ ->
             runOnUiThread {
@@ -1239,19 +1277,13 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
     override fun onPause() {
         super.onPause()
         sensorCoordinator.pause()
-        if (isVolVoiceActive) {
-            isVolVoiceActive = false
-            voiceTimeoutHandler.removeCallbacks(voiceTimeoutRunnable)
-        }
-        stealthVoiceListener?.stopListening(shouldVibrate = false)
+        volumeVoiceSession?.let { appContainer.voiceCaptureManager.release(it) }
+        volumeVoiceSession = null
 
         // Hand off to background service if wallpaper/voice magic is enabled.
         // Stop it if a completely different magic (Contact Force, Digit Flip, etc.) is active.
-        val isWallpaperEnabled = settingsManager.isWallpaperMagicEnabled || settingsManager.isVoiceListenerEnabled
-        val activeMagic = settingsManager.activeMagic
-        val otherMagicActive = activeMagic != "WALLPAPER_MAGIC" && activeMagic != "NONE" && !isWallpaperEnabled
-        if (isWallpaperEnabled && !otherMagicActive) {
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+        if (VoiceFeaturePolicy.shouldRun(settingsManager)) {
+            if (MicPermission.has(this)) {
                 StealthVoiceService.start(this)
             }
         } else {
@@ -1262,8 +1294,8 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
     override fun onDestroy() {
         super.onDestroy()
         sensorCoordinator.destroy()
-        stealthVoiceListener?.stopListening()
-        stealthVoiceListener = null
+        volumeVoiceSession?.let { appContainer.voiceCaptureManager.release(it) }
+        volumeVoiceSession = null
         // Always stop the foreground mic service when the app is fully destroyed.
         StealthVoiceService.stop(this)
     }
@@ -1310,121 +1342,53 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
         }
     }
 
-    private var stealthVoiceListener: StealthVoiceListener? = null
+    private var volumeVoiceSession: VoiceCaptureManager.SessionHandle? = null
 
-    private fun startStealthVoiceCapture() {
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.RECORD_AUDIO), 200)
-            return
-        }
-
-        val activeMode = settingsManager.wallpaperContentType // "CARD" or "NUMBER"
-        stealthVoiceListener?.stopListening()
-        stealthVoiceListener = StealthVoiceListener(
-            context = this,
-            mode = activeMode,
-            onCardCaptured = { card ->
-                runOnUiThread {
-                    android.util.Log.d("MainActivity", "🃏 Voice captured card: ${card.englishName}")
-                    hapticManager.magicVibrate()
-                    soundManager.playMagicSwoosh()
-                    settingsManager.forcedWallpaperCard = card.code
-
-                    if (settingsManager.isWallpaperMagicEnabled) {
-                        triggerWallpaperForce(card.code)
-                    }
-
-                    val cardDisplay = "${card.rank}${card.symbol}"
-                    viewModel.forceDisplay(cardDisplay)
-                    viewModel.saveAndStartReveal(cardDisplay)
-
-                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                        if (settingsManager.isVoiceListenerEnabled || settingsManager.isWallpaperMagicEnabled) {
-                            startStealthVoiceCapture()
-                        }
-                    }, 2000)
-                }
-            },
-            onNumberCaptured = { spokenNumber ->
-                runOnUiThread {
-                    android.util.Log.d("MainActivity", "🎯 Voice captured number: $spokenNumber")
-                    hapticManager.magicVibrate()
-                    soundManager.playMagicSwoosh()
-                    settingsManager.forcedWallpaperNumber = spokenNumber
-
-                    if (settingsManager.isWallpaperMagicEnabled) {
-                        triggerWallpaperForce(spokenNumber)
-                    }
-
-                    viewModel.forceDisplay(spokenNumber)
-                    viewModel.saveAndStartReveal(spokenNumber)
-
-                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                        if (settingsManager.isVoiceListenerEnabled || settingsManager.isWallpaperMagicEnabled) {
-                            startStealthVoiceCapture()
-                        }
-                    }, 2000)
-                }
-            }
-        )
-        stealthVoiceListener?.startListening()
-    }
-
-    private var isVolVoiceActive = false
-    private val voiceTimeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private val voiceTimeoutRunnable = Runnable {
-        if (isVolVoiceActive) {
-            android.util.Log.d("MainActivity", "Voice capture timeout after 8s silence")
-            isVolVoiceActive = false
-            stealthVoiceListener?.stopListening(shouldVibrate = true)
-        }
-    }
-
+    /**
+     * Hardware volume-down inside the calculator toggles one hands-free capture session.
+     *
+     * The session is owned by [VoiceCaptureManager], never by a listener built here, so the
+     * locked-screen service and the Wallpaper & Voice Force dialog cannot end up with a second
+     * `SpeechRecognizer` alive at the same time. That collision is what used to surface as
+     * "Speech Recognition and Synthesis from Google cannot record".
+     */
     private fun toggleVolumeVoiceCapture() {
-        if (isVolVoiceActive) {
+        val manager = appContainer.voiceCaptureManager
+
+        volumeVoiceSession?.let { session ->
             android.util.Log.d("MainActivity", "Volume Down pressed to STOP voice recording")
-            isVolVoiceActive = false
-            voiceTimeoutHandler.removeCallbacks(voiceTimeoutRunnable)
-            stealthVoiceListener?.stopListening(shouldVibrate = true) // Single firm buzz: STOPPED
+            volumeVoiceSession = null
+            manager.release(session)
+            hapticManager.micStopFeedback() // Single firm buzz: STOPPED
             return
         }
 
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.RECORD_AUDIO), 200)
+        if (!MicPermission.ensure(this)) {
             return
         }
 
-        isVolVoiceActive = true
+        // Our own beep-muting surfaces as a volume drop a few hundred ms later. Reading it as the
+        // magician's trigger would stack a session on top of the one that just ducked.
+        if (manager.isInsideSelfDuckWindow()) {
+            android.util.Log.d("MainActivity", "Volume drop ignored — caused by our own beep mute")
+            return
+        }
+
         android.util.Log.d("MainActivity", "Volume Down pressed to START voice recording session")
 
         // 1. Immediate tactile confirmation: Magician's finger instantly feels double-pulse (CHALU HUA)
         hapticManager.micStartFeedback()
 
-        voiceTimeoutHandler.removeCallbacks(voiceTimeoutRunnable)
-        voiceTimeoutHandler.postDelayed(voiceTimeoutRunnable, 8000)
-
         val activeMode = settingsManager.wallpaperContentType // "CARD" or "NUMBER"
-        stealthVoiceListener?.stopListening(shouldVibrate = false)
-        stealthVoiceListener = StealthVoiceListener(
-            context = this,
+        volumeVoiceSession = manager.requestSession(
+            caller = VoiceCaptureManager.Caller.ACTIVITY_VOLUME,
             mode = activeMode,
             onStateChanged = { state ->
                 android.util.Log.d("MainActivity", "Vol Voice State ($activeMode): $state")
             },
-            onErrorDetail = { err, code ->
-                runOnUiThread {
-                    android.util.Log.w("MainActivity", "Voice error in vol capture: $err ($code)")
-                    if (isVolVoiceActive) {
-                        isVolVoiceActive = false
-                        voiceTimeoutHandler.removeCallbacks(voiceTimeoutRunnable)
-                        hapticManager.micStopFeedback()
-                    }
-                }
-            },
             onCardCaptured = { card ->
                 runOnUiThread {
-                    isVolVoiceActive = false
-                    voiceTimeoutHandler.removeCallbacks(voiceTimeoutRunnable)
+                    volumeVoiceSession = null
                     android.util.Log.d("MainActivity", "🃏 Secret Vol Capture Card: ${card.englishName}")
 
                     soundManager.playMagicSwoosh()
@@ -1434,13 +1398,11 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
                     binding.tvDisplay.text = cardDisplay
 
                     triggerWallpaperForce(card.code)
-                    stealthVoiceListener?.stopListening(shouldVibrate = false)
                 }
             },
             onNumberCaptured = { spokenNumber ->
                 runOnUiThread {
-                    isVolVoiceActive = false
-                    voiceTimeoutHandler.removeCallbacks(voiceTimeoutRunnable)
+                    volumeVoiceSession = null
                     android.util.Log.d("MainActivity", "🎯 Secret Vol Capture: $spokenNumber")
 
                     soundManager.playMagicSwoosh()
@@ -1449,11 +1411,28 @@ class MainActivity : AppCompatActivity(), SensorCoordinator.SensorEventListenerC
                     binding.tvDisplay.text = spokenNumber
 
                     triggerWallpaperForce(spokenNumber)
-                    stealthVoiceListener?.stopListening(shouldVibrate = false)
+                }
+            },
+            onEnded = { reason ->
+                // The manager already stopped the recognizer and buzzed for terminal failures, so
+                // this only clears the handle and explains a failure the magician can act on.
+                // Routine ERROR_NO_MATCH no longer lands here: silence keeps the session open until
+                // the timeout, which is how the trick is supposed to work.
+                runOnUiThread {
+                    volumeVoiceSession = null
+                    android.util.Log.d("MainActivity", "Vol voice session ended: $reason")
+                    when (reason) {
+                        VoiceCaptureManager.EndReason.PERMISSION_DENIED ->
+                            MagicToast.show(this, "🎤 Microphone permission is off — grant it in Settings.")
+                        VoiceCaptureManager.EndReason.MIC_BUSY ->
+                            MagicToast.show(this, "🎤 Mic busy — close the other app recording and tap volume down again.")
+                        VoiceCaptureManager.EndReason.REJECTED ->
+                            android.util.Log.d("MainActivity", "Session refused — a higher-priority capture is live")
+                        else -> Unit
+                    }
                 }
             }
         )
-        stealthVoiceListener?.startListening()
     }
 
     private fun executeP2PCommand(command: String) {

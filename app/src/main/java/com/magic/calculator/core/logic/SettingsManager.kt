@@ -99,8 +99,15 @@ class SettingsManager(private val context: Context) {
         set(value) = prefs.edit().putBoolean("explosion_enabled", value).apply()
 
     var activeSensorTrigger: String
-        get() = prefs.getString("sensor_trigger", "NONE") ?: "NONE"
-        set(value) = prefs.edit().putString("sensor_trigger", value).apply()
+        get() = (prefs.getString("sensor_trigger", "NONE") ?: "NONE").also {
+            // Reading also seeds the bus, so every SettingsManager instance agrees without an init
+            // pass — this class is constructed ad-hoc in a dozen places.
+            SettingsBus.publishActiveSensorTrigger(it)
+        }
+        set(value) {
+            prefs.edit().putString("sensor_trigger", value).apply()
+            SettingsBus.publishActiveSensorTrigger(value)
+        }
 
     // Toxic Mode: 0 for Time, 1 for Date, 2 for Battery
     var toxicMode: Int

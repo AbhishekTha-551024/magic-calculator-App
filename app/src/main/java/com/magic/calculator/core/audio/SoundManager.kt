@@ -14,6 +14,16 @@ class SoundManager(private val context: Context) {
 
     val volume: Int get() = _volume
 
+    /**
+     * Set while a microphone capture session is live.
+     *
+     * A `ToneGenerator` plays through STREAM_MUSIC, which an open microphone hears. Magic feedback
+     * tones landing mid-phrase were being picked up as part of the spoken card or number, so every
+     * tone is skipped for the duration of a session.
+     */
+    @Volatile
+    var areEffectsSuppressed: Boolean = false
+
     init {
         initToneGenerator()
     }
@@ -69,6 +79,9 @@ class SoundManager(private val context: Context) {
 
     private fun playTone(tone: Int, durationMs: Int) {
         if (_volume == 0) return
+        // A ToneGenerator is audible to an open microphone. While a voice capture session is live
+        // the recognizer would hear the swoosh as part of the phrase and mis-parse the card or number.
+        if (areEffectsSuppressed) return
         try {
             toneGenerator?.startTone(tone, durationMs)
         } catch (e: Exception) {

@@ -37,6 +37,16 @@
         <package android:name="in.amazon.mShop.android.shopping" />
         <package android:name="com.myairtelapp" />
         <package android:name="com.dreamplug.androidapp" />
+
+        <!-- Speech recognition visibility (Android 11+ package visibility). Without this,
+             SpeechRecognizer.isRecognitionAvailable() can report the service as missing even
+             when Google speech is installed and working. Do NOT replace with QUERY_ALL_PACKAGES:
+             it is a sensitive permission and a likely Play rejection. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <package android:name="com.google.android.as" />
+        <package android:name="com.google.android.googlequicksearchbox" />
     </queries>
 
     <application

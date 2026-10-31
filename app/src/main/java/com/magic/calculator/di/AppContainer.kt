@@ -65,6 +65,16 @@ class AppContainer(private val context: Context) {
         P2PLinkManager.getInstance()
     }
 
+    /**
+     * Sole owner of [com.magic.calculator.feature.voice_wallpaper.data.voice.StealthVoiceListener].
+     * Reached from services too — `Context.appContainer` resolves through `applicationContext`.
+     */
+    val voiceCaptureManager: com.magic.calculator.feature.voice_wallpaper.data.voice.VoiceCaptureManager by lazy {
+        com.magic.calculator.feature.voice_wallpaper.data.voice.VoiceCaptureManager(
+            context, settingsManager, hapticManager, soundManager
+        )
+    }
+
     val calculatorRepository: com.magic.calculator.feature.calculator.domain.repository.CalculatorRepository by lazy {
         com.magic.calculator.feature.calculator.data.repository.CalculatorRepositoryImpl(magicEngine)
     }

@@ -1,8 +1,8 @@
 package com.magic.calculator
 
-import com.magic.calculator.logic.MagicEngine
-import com.magic.calculator.logic.strategies.MagicExecutionContext
-import com.magic.calculator.logic.strategies.MagicRegistry
+import com.magic.calculator.core.logic.MagicEngine
+import com.magic.calculator.core.logic.strategies.MagicExecutionContext
+import com.magic.calculator.core.logic.strategies.MagicRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue

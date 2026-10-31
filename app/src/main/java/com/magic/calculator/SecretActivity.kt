@@ -24,6 +24,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.magic.calculator.databinding.ActivitySecretBinding
 import com.magic.calculator.di.AppContainer
+import com.magic.calculator.core.audio.MicArbiter
+import com.magic.calculator.core.audio.MicPermission
 import com.magic.calculator.core.logic.PinManager
 import com.magic.calculator.core.logic.PremiumManager
 import com.magic.calculator.feature.subscription.presentation.PremiumActivity
@@ -57,11 +59,18 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     // Virtual Counters
     private var volumeUpCount = 0
     private var volumeDownCount = 0
+    @Volatile
     private var isAudioRunning = false
 
-    // Audio Testing
+    // Audio Testing — opt-in Sensor Lab meter, gated by MicArbiter so it can never overlap
+    // with the clap loop or SpeechRecognizer.
+    @Volatile
     private var audioRecord: AudioRecord? = null
     private var audioJob: Job? = null
+
+    @Volatile
+    private var micMeterToken: MicArbiter.Token? = null
+    private var micMeterButton: com.google.android.material.button.MaterialButton? = null
     private val RECORD_AUDIO_PERMISSION_CODE = 101
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,7 +90,6 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         setupSensorTriggerSwitches()
         setupSaveButtons()
 
-        checkAudioPermission()
         applySubscriptionState()
     }
 
@@ -1003,10 +1011,33 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         addVirtualTriggerView("FACE_DOWN", "Orientation (Face Down)")
         addVirtualTriggerView("CLAP", "Microphone (Clap/Snap)")
         addVirtualTriggerView("FINGERPRINT", "Fingerprint Sensor")
+        addMicMeterButton()
 
         if (BuildConfig.DEBUG) {
             addDebugCrashTestButton()
         }
+    }
+
+    /**
+     * Opt-in replacement for the mic meter that used to start automatically in onCreate().
+     * Opening the mic here is gated by [MicArbiter], so it can never collide with a voice
+     * capture session started from the Wallpaper & Voice Force dialog.
+     */
+    private fun addMicMeterButton() {
+        val button = com.google.android.material.button.MaterialButton(this).apply {
+            text = "🎤 Mic Meter: OFF"
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#1F2937"))
+            setOnClickListener { toggleMicMeter() }
+        }
+        val lp = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            setMargins(0, 16, 0, 16)
+        }
+        binding.sensorListContainer.addView(button, lp)
+        micMeterButton = button
     }
 
     private fun addDebugCrashTestButton() {
@@ -1108,26 +1139,66 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
         return super.onKeyDown(keyCode, event)
     }
 
-    private fun checkAudioPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), RECORD_AUDIO_PERMISSION_CODE)
-        } else {
-            startAudioTesting()
-        }
+    /** Returns true when RECORD_AUDIO is already granted; otherwise asks and returns false. */
+    private fun requestAudioPermissionIfNeeded(): Boolean {
+        if (MicPermission.has(this)) return true
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), RECORD_AUDIO_PERMISSION_CODE)
+        return false
     }
 
-    private fun startAudioTesting() {
+    /**
+     * Sensor Lab amplitude meter.
+     *
+     * This used to start from onCreate() and hold the microphone for the whole life of the
+     * activity, which is why Google's speech service reported it could not record while the
+     * Wallpaper & Voice Force dialog was open. It is now opt-in and arbiter-gated.
+     *
+     * @return true when the meter actually took the mic.
+     */
+    private fun startAudioTesting(): Boolean {
+        if (isAudioRunning) return true
+        if (!requestAudioPermissionIfNeeded()) return false
+
+        val token = MicArbiter.tryAcquire(MicArbiter.Owner.DIAG_METER)
+        if (token == null) {
+            MagicToast.show(this, "🎤 Mic busy — ${MicArbiter.peekOwner()} is using it. Stop that first.", isLong = true)
+            updateMicMeterLabel()
+            return false
+        }
+
+        micMeterToken = token
         isAudioRunning = true
         audioJob?.cancel()
         audioJob = lifecycleScope.launch(Dispatchers.Default) {
+            var record: AudioRecord? = null
             try {
                 val bufferSize = AudioRecord.getMinBufferSize(44100, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-                val record = AudioRecord(MediaRecorder.AudioSource.MIC, 44100, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize)
+                if (bufferSize <= 0) {
+                    android.util.Log.e("SecretActivity", "No usable AudioRecord buffer size ($bufferSize)")
+                    withContext(Dispatchers.Main) {
+                        MagicToast.show(this@SecretActivity, "🎤 This device won't share the mic right now.", isLong = true)
+                    }
+                    return@launch
+                }
+                record = AudioRecord(MediaRecorder.AudioSource.MIC, 44100, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize)
+                if (record.state != AudioRecord.STATE_INITIALIZED) {
+                    android.util.Log.e("SecretActivity", "AudioRecord failed to initialise — another app holds the mic")
+                    withContext(Dispatchers.Main) {
+                        MagicToast.show(this@SecretActivity, "🎤 Mic busy — ${MicArbiter.peekOwner() ?: "another app"} is using it.", isLong = true)
+                    }
+                    return@launch
+                }
                 audioRecord = record
                 val buffer = ShortArray(bufferSize)
                 record.startRecording()
 
-                while (isAudioRunning && isActive) {
+                while (isAudioRunning && isActive && audioRecord === record) {
+                    // The diagnostic meter is the lowest-priority mic user: it steps aside for
+                    // speech recognition as soon as the arbiter asks.
+                    if (MicArbiter.shouldYield(MicArbiter.Owner.DIAG_METER)) {
+                        android.util.Log.d("SecretActivity", "Mic meter yielding to speech recognition")
+                        break
+                    }
                     val read = record.read(buffer, 0, bufferSize)
                     if (read > 0) {
                         var maxAmplitude = 0
@@ -1154,15 +1225,43 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                try {
-                    audioRecord?.stop()
-                    audioRecord?.release()
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
-                audioRecord = null
+                // Same guard as the clap loop: a late-resuming cancelled meter must not release the
+                // token and AudioRecord belonging to a newer meter session.
+                if (micMeterToken === token) releaseAudioMeter()
             }
         }
+        updateMicMeterLabel()
+        return true
+    }
+
+    private fun stopAudioTesting() {
+        audioJob?.cancel()
+        audioJob = null
+        releaseAudioMeter()
+        updateMicMeterLabel()
+    }
+
+    /** Synchronous hardware + ownership release. Safe to call more than once. */
+    private fun releaseAudioMeter() {
+        isAudioRunning = false
+        val record = audioRecord
+        audioRecord = null
+        if (record != null) {
+            try { record.stop() } catch (_: Exception) {}
+            try { record.release() } catch (_: Exception) {}
+        }
+        val token = micMeterToken
+        micMeterToken = null
+        if (token != null) MicArbiter.release(token)
+    }
+
+    private fun updateMicMeterLabel() {
+        micMeterButton?.text =
+            if (isAudioRunning) "🎤 Mic Meter: ON (tap to stop)" else "🎤 Mic Meter: OFF"
+    }
+
+    private fun toggleMicMeter() {
+        if (isAudioRunning) stopAudioTesting() else startAudioTesting()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -1188,31 +1287,13 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
     override fun onPause() {
         super.onPause()
         saveSystemSettings()
-        isAudioRunning = false
-        audioJob?.cancel()
-        audioJob = null
-        try {
-            audioRecord?.stop()
-            audioRecord?.release()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        audioRecord = null
+        stopAudioTesting()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         sensorManager.unregisterListener(this)
-        isAudioRunning = false
-        audioJob?.cancel()
-        audioJob = null
-        try {
-            audioRecord?.stop()
-            audioRecord?.release()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        audioRecord = null
+        stopAudioTesting()
     }
 
     private fun checkAndRequestMoiLockPermissions() {
@@ -1400,7 +1481,7 @@ class SecretActivity : AppCompatActivity(), SensorEventListener {
 
         val rowMic = findViewById<View>(R.id.rowPermMic)
         val btnMic = findViewById<android.widget.Button>(R.id.btnGrantMic)
-        val missingMic = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
+        val missingMic = !MicPermission.has(this)
         rowMic?.visibility = if (missingMic) View.VISIBLE else View.GONE
         btnMic?.setOnClickListener { requestRuntime(Manifest.permission.RECORD_AUDIO, 200) }
 
